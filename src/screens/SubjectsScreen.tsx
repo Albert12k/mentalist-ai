@@ -1,255 +1,653 @@
-import { useState } from "react";
+import {
+  useState
+} from "react";
+
+
 import {
   SafeAreaView,
   Text,
   View,
   Pressable,
-  Modal,
-  TextInput,
 } from "react-native";
 
+
+// 🧭 NAVEGAÇÃO
+
+import {
+  useNavigation
+} from "@react-navigation/native";
+
+
+
 // 🎨 TIPOS
+
 import { Subject } from "../types/Subject";
 
-// 🎨 CORES
-import { colorPalette } from "../data/colors";
 
-// 🧠 CONTEXT GLOBAL
-import { useSubjects } from "../contexts/SubjectsContext";
 
-export default function SubjectsScreen() {
+// 🧠 CONTEXT
+
+import {
+  useSubjects
+} from "../contexts/SubjectsContext";
+
+
+
+// 🧩 COMPONENTES
+
+import CreateSubjectModal
+from "../components/CreateSubjectModal";
+
+
+
+
+
+export default function SubjectsScreen(){
+
+
+
+  // =========================
+  // 🧭 NAVEGAÇÃO
+  // =========================
+
+  const navigation = useNavigation<any>();
+
+
+
+
+
+
   // =========================
   // 📦 CONTEXT
   // =========================
-  const { subjects, addSubject, updateSubjects } = useSubjects();
+
+  const {
+    subjects,
+    addSubject,
+    updateSubjects
+  } = useSubjects();
+
+
+
+
+
+
 
   // =========================
-  // 🧠 STATES DO MODAL
+  // 🧠 CONTROLE DO MODAL
   // =========================
-  const [modalVisible, setModalVisible] = useState(false);
-  const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#7C4DFF");
+
+  const [
+    modalVisible,
+    setModalVisible
+  ] = useState(false);
+
+
+
+
+
+
 
   // =========================
   // ➕ CRIAR MATÉRIA
   // =========================
-  function handleCreateSubject() {
-    if (!name.trim()) return;
 
-    const newSubject: Subject = {
-      id: String(Date.now()),
-      name: name.trim(),
-      color: selectedColor,
-      retention: 0,
-    };
+  function handleCreate(
+    subject: Subject
+  ){
 
-    addSubject(newSubject);
+    addSubject(subject);
 
-    // reset
-    setName("");
-    setSelectedColor("#7C4DFF");
-    setModalVisible(false);
   }
 
+
+
+
+
+
+
+
+
   // =========================
-  // 🧠 ESTUDAR (RETENÇÃO)
+  // ⚡ GANHAR XP / RETENÇÃO
   // =========================
-  function handleStudy(id: string) {
-    const updated = subjects.map((sub) => {
-      if (sub.id === id) {
-        return {
-          ...sub,
-          retention: Math.min(sub.retention + 5, 100),
-        };
-      }
-      return sub;
-    });
+
+  function handleStudy(
+    id:string
+  ){
+
+
+    const updated =
+      subjects.map((subject)=>{
+
+
+        if(subject.id === id){
+
+          return {
+
+            ...subject,
+
+            retention:
+              Math.min(
+                subject.retention + 5,
+                100
+              )
+
+          };
+
+        }
+
+
+        return subject;
+
+
+      });
+
+
 
     updateSubjects(updated);
+
+
   }
 
-  // =========================
-  // 🎨 RENDER ITEM
-  // =========================
-  const renderSubject = (item: Subject) => (
-    <View
-      key={item.id}
-      style={{
-        padding: 14,
-        borderRadius: 12,
-        backgroundColor: "#161625",
-        marginBottom: 10,
-        borderLeftWidth: 6,
-        borderLeftColor: item.color,
-      }}
-    >
-      {/* 📘 NOME */}
-      <Text style={{ color: "white", fontSize: 16 }}>
-        {item.name}
-      </Text>
 
-      {/* 📊 RETENÇÃO */}
-      <Text style={{ color: "#888", marginTop: 4 }}>
-        Retenção: {item.retention.toFixed(1)}%
-      </Text>
 
-      {/* ⚡ BOTÃO ESTUDAR */}
+
+
+
+
+
+
+  // =========================
+  // 🎨 CARD DA MATÉRIA
+  // =========================
+
+  function renderSubject(
+    item:Subject
+  ){
+
+
+    return (
+
       <Pressable
-        onPress={() => handleStudy(item.id)}
+
+
+        key={item.id}
+
+
+        // =========================
+        // 📘 ABRIR DETALHES
+        // =========================
+
+        onPress={()=>
+
+
+          navigation.navigate(
+
+            "SubjectDetails",
+
+            {
+
+              subject:item
+
+            }
+
+          )
+
+
+        }
+
+
+
         style={{
-          marginTop: 10,
-          backgroundColor: "#7C4DFF",
-          padding: 8,
-          borderRadius: 8,
-          alignSelf: "flex-start",
+
+
+          backgroundColor:"#161625",
+
+
+          padding:15,
+
+
+          borderRadius:12,
+
+
+          marginBottom:12,
+
+
+          borderLeftWidth:6,
+
+
+          borderLeftColor:item.color
+
+
         }}
+
+
       >
-        <Text style={{ color: "white", fontSize: 12, fontWeight: "600" }}>
-          Estudar +XP
-        </Text>
-      </Pressable>
-    </View>
-  );
 
-  // =========================
-  // 🧠 MODAL DE CRIAÇÃO
-  // =========================
-  const CreationModal = () => (
-    <Modal visible={modalVisible} animationType="slide">
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor: "#080810",
-          padding: 20,
-        }}
-      >
-        <Text style={{ color: "white", fontSize: 20 }}>
-          Criar Matéria
-        </Text>
 
-        {/* INPUT */}
-        <TextInput
-          placeholder="Nome da matéria"
-          placeholderTextColor="#666"
-          value={name}
-          onChangeText={setName}
+
+
+
+
+        {/* NOME */}
+
+
+        <Text
+
           style={{
-            backgroundColor: "#161625",
-            color: "white",
-            padding: 12,
-            borderRadius: 10,
-            marginTop: 20,
-          }}
-        />
 
-        {/* CORES */}
-        <Text style={{ color: "#888", marginTop: 20 }}>
-          Escolha uma cor
-        </Text>
+            color:"white",
 
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            marginTop: 10,
-            gap: 10,
+            fontSize:18,
+
+            fontWeight:"700"
+
           }}
+
         >
-          {colorPalette.map((color) => (
-            <Pressable
-              key={color}
-              onPress={() => setSelectedColor(color)}
+
+          📘 {item.name}
+
+        </Text>
+
+
+
+
+
+
+        {/* RETENÇÃO */}
+
+
+        <Text
+
+          style={{
+
+            color:"#888",
+
+            marginTop:5
+
+          }}
+
+        >
+
+          Retenção:
+          {" "}
+          {item.retention.toFixed(1)}%
+
+        </Text>
+
+
+
+
+
+
+        {/* DIFICULDADE */}
+
+
+        <Text
+
+          style={{
+
+            color:"#777",
+
+            marginTop:5
+
+          }}
+
+        >
+
+          Dificuldade:
+          {" "}
+          {item.difficulty}
+
+        </Text>
+
+
+
+
+
+
+        {/* INDICAÇÃO */}
+
+
+        <Text
+
+          style={{
+
+            color:"#555",
+
+            marginTop:8,
+
+            fontSize:12
+
+          }}
+
+        >
+
+          Toque para abrir detalhes →
+
+        </Text>
+
+
+
+
+
+
+
+        {/* BOTÃO XP */}
+
+
+        <View>
+
+
+          <Pressable
+
+
+            onPress={()=>handleStudy(item.id)}
+
+
+
+            style={{
+
+
+              backgroundColor:"#7C4DFF",
+
+
+              padding:10,
+
+
+              borderRadius:8,
+
+
+              marginTop:12,
+
+
+              alignSelf:"flex-start"
+
+
+            }}
+
+
+
+          >
+
+
+
+            <Text
+
               style={{
-                width: 30,
-                height: 30,
-                borderRadius: 999,
-                backgroundColor: color,
-                borderWidth: selectedColor === color ? 3 : 1,
-                borderColor:
-                  selectedColor === color ? "white" : "transparent",
+
+                color:"white",
+
+                fontWeight:"700"
+
               }}
-            />
-          ))}
+
+            >
+
+              ⚡ Estudar +XP
+
+            </Text>
+
+
+
+          </Pressable>
+
+
         </View>
 
-        {/* CRIAR */}
-        <Pressable
-          onPress={handleCreateSubject}
-          style={{
-            marginTop: 30,
-            backgroundColor: "#00E676",
-            padding: 14,
-            borderRadius: 12,
-          }}
-        >
-          <Text style={{ textAlign: "center", fontWeight: "700" }}>
-            Criar
-          </Text>
-        </Pressable>
 
-        {/* CANCELAR */}
-        <Pressable
-          onPress={() => setModalVisible(false)}
-          style={{ marginTop: 10, padding: 14 }}
-        >
-          <Text style={{ color: "#888", textAlign: "center" }}>
-            Cancelar
-          </Text>
-        </Pressable>
-      </SafeAreaView>
-    </Modal>
-  );
 
-  // =========================
-  // 🧠 UI PRINCIPAL
-  // =========================
-  return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: "#080810",
-        padding: 20,
-      }}
-    >
-      {/* HEADER */}
-      <Text
-        style={{
-          color: "white",
-          fontSize: 24,
-          fontWeight: "700",
-        }}
-      >
-        📚 Matérias
-      </Text>
 
-      {/* LISTA */}
-      <View style={{ marginTop: 20 }}>
-        {subjects.length === 0 ? (
-          <Text style={{ color: "#888" }}>
-            Nenhuma matéria criada ainda
-          </Text>
-        ) : (
-          subjects.map(renderSubject)
-        )}
-      </View>
 
-      {/* BOTÃO CRIAR */}
-      <Pressable
-        onPress={() => setModalVisible(true)}
-        style={{
-          marginTop: 20,
-          backgroundColor: "#7C4DFF",
-          padding: 14,
-          borderRadius: 12,
-        }}
-      >
-        <Text style={{ color: "white", textAlign: "center" }}>
-          + Nova Matéria
-        </Text>
+
+
       </Pressable>
 
+
+    );
+
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+  // =========================
+  // 🧠 TELA
+  // =========================
+
+  return (
+
+
+    <SafeAreaView
+
+
+      style={{
+
+
+        flex:1,
+
+
+        backgroundColor:"#080810",
+
+
+        padding:20
+
+
+      }}
+
+
+    >
+
+
+
+
+
+
+      <Text
+
+
+        style={{
+
+
+          color:"white",
+
+
+          fontSize:26,
+
+
+          fontWeight:"700"
+
+
+        }}
+
+
+      >
+
+
+        📚 Matérias
+
+
+      </Text>
+
+
+
+
+
+
+
+
+
+      <View
+
+
+        style={{
+
+
+          marginTop:20
+
+
+        }}
+
+
+      >
+
+
+
+        {
+
+          subjects.length === 0 ? (
+
+
+            <Text
+
+              style={{
+
+                color:"#888"
+
+              }}
+
+            >
+
+              Nenhuma matéria criada ainda
+
+            </Text>
+
+
+          ) : (
+
+
+            subjects.map(renderSubject)
+
+
+          )
+
+
+        }
+
+
+
+      </View>
+
+
+
+
+
+
+
+
+
+      <Pressable
+
+
+        onPress={()=>setModalVisible(true)}
+
+
+        style={{
+
+
+          backgroundColor:"#7C4DFF",
+
+
+          padding:15,
+
+
+          borderRadius:12,
+
+
+          marginTop:20
+
+
+        }}
+
+
+      >
+
+
+        <Text
+
+
+          style={{
+
+
+            color:"white",
+
+
+            textAlign:"center",
+
+
+            fontWeight:"700"
+
+
+          }}
+
+
+        >
+
+
+          + Nova Matéria
+
+
+        </Text>
+
+
+      </Pressable>
+
+
+
+
+
+
+
+
+
       {/* MODAL */}
-      <CreationModal />
+
+
+      <CreateSubjectModal
+
+
+
+        visible={modalVisible}
+
+
+
+        onClose={()=>
+
+
+          setModalVisible(false)
+
+
+        }
+
+
+
+        onCreate={handleCreate}
+
+
+
+      />
+
+
+
+
+
+
+
     </SafeAreaView>
+
+
   );
+
+
 }
