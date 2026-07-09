@@ -55,7 +55,21 @@ type SubjectsContextType = {
 
 
 
+  // 🗑️ Remover matéria
+
+  removeSubject: (
+    id:string
+  ) => void;
+
+    // ✏️ Editar uma matéria específica
+
+  updateSubject: (
+    subject: Subject
+  ) => void;
+
 };
+
+
 
 
 
@@ -66,6 +80,8 @@ type SubjectsContextType = {
 
 const SubjectsContext =
   createContext<SubjectsContextType | null>(null);
+
+
 
 
 
@@ -98,19 +114,25 @@ export function SubjectsProvider(
 
 
 
+
+
+
   // =========================
   // 📥 CARREGAR DADOS SALVOS
   // =========================
 
   useEffect(() => {
 
+
     async function loadSubjects() {
+
 
       const saved =
         await getSubjects();
 
 
       setSubjects(saved);
+
 
     }
 
@@ -119,6 +141,8 @@ export function SubjectsProvider(
 
 
   }, []);
+
+
 
 
 
@@ -141,19 +165,21 @@ export function SubjectsProvider(
 
 
           const updated = [
+
             ...currentSubjects,
+
             subject,
+
           ];
 
 
-
-          // 💾 salva automaticamente
 
           saveSubjects(updated);
 
 
 
           return updated;
+
 
         }
       );
@@ -162,6 +188,8 @@ export function SubjectsProvider(
     },
     []
   );
+
+
 
 
 
@@ -185,8 +213,6 @@ export function SubjectsProvider(
 
 
 
-      // 💾 salva alterações
-
       saveSubjects(
         updatedSubjects
       );
@@ -197,75 +223,87 @@ export function SubjectsProvider(
   );
 
 
+  // =========================
+  // 🗑️ REMOVER MATÉRIA
+  // =========================
 
+  const removeSubject = useCallback((id: string) => {
+    setSubjects((currentSubjects) => {
+      const updated = currentSubjects.filter((subject) => subject.id !== id);
+      
+      // 💾 salva automaticamente
+      saveSubjects(updated);
+      
+      return updated;
+    });
+  }, []);
 
-
-
-
+  // =========================
+  // ✨ NOVA FUNÇÃO: updateSubject
+  // =========================
+  const updateSubject = useCallback((updatedSubject: Subject) => {
+    setSubjects((currentSubjects) => {
+      const updated = currentSubjects.map((subject) => 
+        subject.id === updatedSubject.id ? updatedSubject : subject
+      );
+      
+      // 💾 salva automaticamente
+      saveSubjects(updated);
+      
+      return updated;
+    });
+  }, []);
 
   // =========================
   // 🌎 PROVIDER
   // =========================
-
   return (
-
-
     <SubjectsContext.Provider
-
       value={{
-
         subjects,
-
         addSubject,
-
-        updateSubjects,
-
+        updateSubjects, // Mantenha apenas se você realmente usa essa função em outro lugar
+        updateSubject,  // Adicionado e agora possui uma função correspondente acima
+        removeSubject,
       }}
-
     >
-
-
       {children}
-
-
     </SubjectsContext.Provider>
-
-
   );
 
+     
+
 }
-
-
-
-
-
-
 
 
 // =========================
 // 🧠 HOOK PERSONALIZADO
 // =========================
 
-export function useSubjects() {
+export function useSubjects(){
 
 
   const context =
+
     useContext(
       SubjectsContext
     );
 
 
 
-  if (!context) {
+  if(!context){
+
 
     throw new Error(
       "useSubjects deve ser usado dentro de SubjectsProvider"
     );
+
 
   }
 
 
 
   return context;
+
 
 }

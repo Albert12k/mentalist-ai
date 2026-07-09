@@ -13,3 +13,72 @@
 {"_e":"devserver:start","_t":1783341341323,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
 {"_e":"metro:config","_t":1783341341626,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
 {"_e":"metro:instantiate","_t":1783341342928,"atlas":false,"workers":12,"host":"::","port":8081}
+{"_e":"root:init","_t":1783597165054,"format":"v0-jsonl","version":"56.1.16"}
+{"_e":"env:mode","_t":1783597165055,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1783597165058,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1783597165797,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1783597166659,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1783597172619,"atlas":false,"workers":12,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1783597174320,"id":"1","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1783597174320,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1783597174327,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1783597175939,"id":"1","progress":0.010000000000000002,"total":1,"current":1}
+{"_e":"metro:bundling:progress","_t":1783597176040,"id":"1","progress":0.010000000000000002,"total":3,"current":1}
+{"_e":"metro:bundling:progress","_t":1783597176105,"id":"1","progress":0.04000000000000001,"total":3,"current":2}
+{"_e":"metro:bundling:progress","_t":1783597176209,"id":"1","progress":0.25,"total":10,"current":5}
+{"_e":"metro:bundling:progress","_t":1783597177037,"id":"1","progress":0.36,"total":10,"current":6}
+{"_e":"metro:bundling:progress","_t":1783597177138,"id":"1","progress":0.36,"total":17,"current":9}
+{"_e":"metro:bundling:progress","_t":1783597177241,"id":"1","progress":0.36,"total":47,"current":13}
+{"_e":"metro:bundling:progress","_t":1783597177343,"id":"1","progress":0.36,"total":58,"current":30}
+{"_e":"metro:bundling:progress","_t":1783597177461,"id":"1","progress":0.36,"total":70,"current":36}
+{"_e":"metro:bundling:progress","_t":1783597177563,"id":"1","progress":0.36,"total":102,"current":42}
+{"_e":"metro:bundling:progress","_t":1783597177684,"id":"1","progress":0.36,"total":110,"current":49}
+{"_e":"metro:bundling:progress","_t":1783597177784,"id":"1","progress":0.36,"total":112,"current":61}
+{"_e":"metro:bundling:progress","_t":1783597177885,"id":"1","progress":0.36,"total":115,"current":69}
+{"_e":"metro:bundling:progress","_t":1783597177988,"id":"1","progress":0.371337890625,"total":128,"current":78}
+{"_e":"metro:bundling:progress","_t":1783597178094,"id":"1","progress":0.371337890625,"total":167,"current":87}
+{"_e":"metro:bundling:progress","_t":1783597178202,"id":"1","progress":0.371337890625,"total":181,"current":98}
+{"_e":"metro:bundling:progress","_t":1783597178303,"id":"1","progress":0.371337890625,"total":189,"current":108}
+{"_e":"metro:bundling:progress","_t":1783597178408,"id":"1","progress":0.371337890625,"total":227,"current":119}
+{"_e":"metro:bundling:progress","_t":1783597178511,"id":"1","progress":0.371337890625,"total":234,"current":128}
+{"_e":"metro:bundling:progress","_t":1783597178633,"id":"1","progress":0.371337890625,"total":251,"current":136}
+{"_e":"metro:bundling:progress","_t":1783597178759,"id":"1","progress":0.371337890625,"total":255,"current":147}
+{"_e":"metro:bundling:progress","_t":1783597178869,"id":"1","progress":0.371337890625,"total":283,"current":156}
+{"_e":"metro:bundling:progress","_t":1783597178994,"id":"1","progress":0.371337890625,"total":288,"current":168}
+{"_e":"metro:bundling:progress","_t":1783597179095,"id":"1","progress":0.371337890625,"total":309,"current":180}
+{"_e":"metro:bundling:progress","_t":1783597179205,"id":"1","progress":0.371337890625,"total":325,"current":190}
+{"_e":"metro:bundling:progress","_t":1783597179306,"id":"1","progress":0.3853865649169075,"total":327,"current":203}
+{"_e":"metro:bundling:progress","_t":1783597179409,"id":"1","progress":0.43376749025656935,"total":331,"current":218}
+{"_e":"metro:bundling:progress","_t":1783597179510,"id":"1","progress":0.4470097750168176,"total":347,"current":232}
+{"_e":"metro:bundling:progress","_t":1783597179611,"id":"1","progress":0.4968432114678862,"total":349,"current":246}
+{"_e":"metro:bundling:progress","_t":1783597179731,"id":"1","progress":0.5402878223391044,"total":351,"current":258}
+{"_e":"metro:bundling:progress","_t":1783597179831,"id":"1","progress":0.5969149934321637,"total":365,"current":282}
+{"_e":"metro:bundling:progress","_t":1783597179931,"id":"1","progress":0.6239319262109552,"total":376,"current":297}
+{"_e":"metro:bundling:progress","_t":1783597180031,"id":"1","progress":0.6659574753684663,"total":386,"current":315}
+{"_e":"metro:bundling:progress","_t":1783597180131,"id":"1","progress":0.6801158360006098,"total":405,"current":334}
+{"_e":"metro:bundling:progress","_t":1783597180243,"id":"1","progress":0.7299462720331793,"total":412,"current":352}
+{"_e":"metro:bundling:progress","_t":1783597180343,"id":"1","progress":0.7775654030369589,"total":423,"current":373}
+{"_e":"metro:bundling:progress","_t":1783597180443,"id":"1","progress":0.7954711468224982,"total":444,"current":396}
+{"_e":"metro:bundling:progress","_t":1783597180546,"id":"1","progress":0.8581044722576531,"total":448,"current":415}
+{"_e":"metro:bundling:progress","_t":1783597180649,"id":"1","progress":0.9100155817174516,"total":456,"current":435}
+{"_e":"metro:bundling:progress","_t":1783597180753,"id":"1","progress":0.9100155817174516,"total":475,"current":451}
+{"_e":"metro:bundling:progress","_t":1783597180853,"id":"1","progress":0.9100155817174516,"total":498,"current":473}
+{"_e":"metro:bundling:progress","_t":1783597180954,"id":"1","progress":0.9723606670118455,"total":503,"current":496}
+{"_e":"metro:bundling:progress","_t":1783597181060,"id":"1","progress":0.9723606670118455,"total":523,"current":507}
+{"_e":"metro:bundling:progress","_t":1783597181161,"id":"1","progress":0.9723606670118455,"total":533,"current":520}
+{"_e":"metro:bundling:progress","_t":1783597181261,"id":"1","progress":0.9851853899199845,"total":538,"current":534}
+{"_e":"metro:bundling:progress","_t":1783597181372,"id":"1","progress":0.9963201503142286,"total":543,"current":542}
+{"_e":"metro:bundling:progress","_t":1783597182449,"id":"1","progress":0.999,"total":543,"current":543}
+{"_e":"metro:bundling:progress","_t":1783597182550,"id":"1","progress":0.999,"total":545,"current":545}
+{"_e":"metro:bundling:done","_t":1783597182804,"id":"1","total":545,"ms":8483.7313}
+{"_e":"metro:client_log","_t":1783597182970,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1783597182972,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1783597182972,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:bundling:started","_t":1783597242503,"id":"3","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:started","_t":1783597991451,"id":"4","platform":"web","environment":null,"entry":"index.ts"}
+{"_e":"metro:bundling:progress","_t":1783597991451,"id":"4","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1783597991482,"id":"4","total":1,"ms":30.852}
+{"_e":"metro:client_log","_t":1783597991644,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1783597991644,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1783597991644,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1783598795501,"level":"error","data":["The action 'NAVIGATE' with payload {\"name\":\"SubjectDetails\",\"params\":{\"subject\":{\"id\":\"1783512106310\",\"name\":\"eu\",\"color\":\"#448AFF\",\"difficulty\":\"hard\",\"goal\":\"exam\",\"frequency\":\"three_times\",\"retention\":0,\"createdAt\":\"2026-07-08T12:01:46.310Z\"}}} was not handled by any navigator.\n\nDo you have a screen named 'SubjectDetails'?\n\nIf you're trying to navigate to a screen in a nested navigator, see https://reactnavigation.org/docs/nesting-navigators#navigating-to-a-screen-in-a-nested-navigator.\n\nIf you're using conditional rendering, navigation will happen automatically and you shouldn't navigate manually, see.\n\nThis is a development-only warning and won't be shown in production.","\n\n\u001b[1mCode: setupHMR.ts\u001b[22m\n\u001b[0m \u001b[90m 79 |\u001b[39m \u001b[36mfunction\u001b[39m captureCurrentStack() {\n \u001b[90m 80 |\u001b[39m   \u001b[90m// If you're reading this, look deeper into the call stack to find the actual error source.\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 81 |\u001b[39m   \u001b[36mreturn\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mNamelessError\u001b[39m()\u001b[33m.\u001b[39mstack\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 82 |\u001b[39m }\n \u001b[90m 83 |\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[2m\u001b[90m  captureCurrentStack (node_modules\\expo\\src\\async-require\\setupHMR.ts:81:10)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  addErrorStacks (node_modules\\expo\\src\\async-require\\setupHMR.ts:59:19)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  console.level (node_modules\\expo\\src\\async-require\\setupHMR.ts:22:48)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  useLatestCallback$argument_0 (node_modules\\@react-navigation\\core\\lib\\module\\BaseNavigationContainer.js:342:13)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  latestCallback (node_modules\\use-latest-callback\\lib\\src\\index.js:21:28)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  useLatestCallback$argument_0 (node_modules\\@react-navigation\\core\\lib\\module\\useNavigationBuilder.js:551:28)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  latestCallback (node_modules\\use-latest-callback\\lib\\src\\index.js:21:28)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  dispatch (node_modules\\@react-navigation\\core\\lib\\module\\useNavigationHelpers.js:29:26)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  dispatch (node_modules\\@react-navigation\\core\\lib\\module\\useNavigationCache.js:83:22)\u001b[39m\u001b[22m\n\u001b[2m\u001b[90m  withStack$argument_0 (node_modules\\@react-navigation\\core\\lib\\module\\useNavigationCache.js:111:9)\u001b[39m\u001b[22m","\n\n\u001b[1mCode: SubjectsScreen.tsx\u001b[22m\n\u001b[0m \u001b[90m 227 |\u001b[39m     \u001b[36mreturn\u001b[39m (\n \u001b[90m 228 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 229 |\u001b[39m       \u001b[33m<\u001b[39m\u001b[33mPressable\u001b[39m\n \u001b[90m     |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 230 |\u001b[39m\n \u001b[90m 231 |\u001b[39m\n \u001b[90m 232 |\u001b[39m         key\u001b[33m=\u001b[39m{item\u001b[33m.\u001b[39mid}\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  renderSubject (src\\screens\\SubjectsScreen.tsx:229:7)\u001b[39m\n\u001b[90m  SubjectsScreen (src\\screens\\SubjectsScreen.tsx:633:20)\u001b[39m\n\u001b[90m  AppNavigator (src\\navigation\\AppNavigator.tsx:24:7)\u001b[39m\n\u001b[90m  App (App.tsx:7:7)\u001b[39m"]}

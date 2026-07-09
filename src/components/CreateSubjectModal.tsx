@@ -15,7 +15,13 @@ import { useState } from "react";
 // 🎨 TIPOS
 // =========================
 
-import { Subject } from "../types/Subject";
+import {
+  Subject,
+  SubjectDifficulty,
+  StudyGoal,
+  StudyFrequency,
+} from "../types/Subject";
+
 
 
 // =========================
@@ -45,7 +51,6 @@ type Props = {
 
 
 
-
 // =========================
 // 🧠 COMPONENTE
 // =========================
@@ -66,68 +71,65 @@ export default function CreateSubjectModal({
   // 📝 DADOS BÁSICOS
   // =========================
 
-  const [
-    name,
-    setName
-  ] = useState("");
+
+  const [name, setName] =
+    useState("");
 
 
 
-  const [
-    selectedColor,
-    setSelectedColor
-  ] = useState("#7C4DFF");
+  const [description, setDescription] =
+    useState("");
 
 
 
-
-
-  // =========================
-  // 🧠 INTELIGÊNCIA DA MATÉRIA
-  // =========================
-
-
-  const [
-    difficulty,
-    setDifficulty
-  ] = useState<
-    "easy" | "medium" | "hard"
-  >("medium");
+  const [selectedColor, setSelectedColor] =
+    useState("#7C4DFF");
 
 
 
+  // preparado para imagem futura
 
-  const [
-    goal,
-    setGoal
-  ] = useState<
-    "exam" |
-    "college" |
-    "contest" |
-    "career" |
-    "personal"
-  >("personal");
-
-
-
-
-  const [
-    frequency,
-    setFrequency
-  ] = useState<
-    "daily" |
-    "three_times" |
-    "weekend"
-  >("daily");
-
+  const [image] =
+    useState<string | undefined>(
+      undefined
+    );
 
 
 
 
 
   // =========================
-  // ➕ CRIAR MATÉRIA
+  // 🧠 INTELIGÊNCIA
   // =========================
+
+
+  const [difficulty, setDifficulty] =
+    useState<SubjectDifficulty>(
+      "medium"
+    );
+
+
+
+  const [goal, setGoal] =
+    useState<StudyGoal>(
+      "personal"
+    );
+
+
+
+  const [frequency, setFrequency] =
+    useState<StudyFrequency>(
+      "daily"
+    );
+
+
+
+
+
+  // =========================
+  // ➕ CRIAR
+  // =========================
+
 
   function handleCreate(){
 
@@ -136,20 +138,22 @@ export default function CreateSubjectModal({
 
 
 
-    const newSubject: Subject = {
+    const subject: Subject = {
 
-
-      // 🆔 IDENTIFICAÇÃO
 
       id:
         String(Date.now()),
 
 
 
-      // 📚 INFORMAÇÕES BÁSICAS
-
       name:
         name.trim(),
+
+
+
+      description:
+        description.trim(),
+
 
 
       color:
@@ -157,46 +161,63 @@ export default function CreateSubjectModal({
 
 
 
-      // 🧠 INFORMAÇÕES INTELIGENTES
+      image,
+
+
 
       difficulty,
 
+
       goal,
+
 
       frequency,
 
 
 
-      // 📊 DESEMPENHO
-
-      retention:0,
-
+      retention:
+        0,
 
 
-      // 📅 CONTROLE
+
+      contents:
+        [],
+
+
+
+      events:
+        [],
+
+
+
+      notes:
+        "",
+
+
+
+      studyHistory:
+        [],
+
+
 
       createdAt:
         new Date().toISOString(),
-
-        contents: [],
-events: [],
-notes: "",
-studyHistory: [],
 
 
     };
 
 
 
-    onCreate(
-      newSubject
-    );
+    onCreate(subject);
 
 
 
-    // limpar formulário
+
+    // reset
 
     setName("");
+
+    setDescription("");
 
     setSelectedColor("#7C4DFF");
 
@@ -217,10 +238,10 @@ studyHistory: [],
 
 
 
-
   // =========================
   // 🔘 BOTÃO DE OPÇÃO
   // =========================
+
 
   function OptionButton({
 
@@ -285,6 +306,7 @@ studyHistory: [],
 
     );
 
+
   }
 
 
@@ -292,18 +314,18 @@ studyHistory: [],
 
 
 
+  // =========================
+  // 🎨 INTERFACE
+  // =========================
 
 
   return (
-
 
     <Modal
 
       visible={visible}
 
       animationType="slide"
-
-      transparent={false}
 
       onRequestClose={onClose}
 
@@ -341,7 +363,7 @@ studyHistory: [],
 
               color:"white",
 
-              fontSize:24,
+              fontSize:26,
 
               fontWeight:"700",
 
@@ -356,8 +378,6 @@ studyHistory: [],
 
 
 
-
-          {/* NOME */}
 
           <TextInput
 
@@ -389,8 +409,42 @@ studyHistory: [],
 
 
 
+          <TextInput
 
-          {/* CORES */}
+            placeholder="Descrição da matéria"
+
+            placeholderTextColor="#666"
+
+            value={description}
+
+            onChangeText={setDescription}
+
+            multiline
+
+            style={{
+
+              backgroundColor:"#161625",
+
+              color:"white",
+
+              padding:12,
+
+              borderRadius:10,
+
+              marginTop:12,
+
+              height:80,
+
+              textAlignVertical:"top",
+
+            }}
+
+          />
+
+
+
+
+
 
           <Text
 
@@ -424,9 +478,9 @@ studyHistory: [],
 
           >
 
+
             {
               colorPalette.map((color)=>(
-
 
                 <Pressable
 
@@ -449,9 +503,10 @@ studyHistory: [],
                     margin:5,
 
                     borderWidth:
-                      selectedColor===color
-                      ?3
-                      :0,
+
+                      selectedColor === color
+                      ? 3
+                      : 0,
 
                     borderColor:"white",
 
@@ -471,17 +526,13 @@ studyHistory: [],
 
 
 
-
-          {/* DIFICULDADE */}
-
           <Text style={{color:"#888", marginTop:20}}>
-
             Dificuldade
-
           </Text>
 
 
           <View style={{flexDirection:"row"}}>
+
 
             <OptionButton
               label="Fácil"
@@ -510,17 +561,12 @@ studyHistory: [],
 
 
 
-
-          {/* OBJETIVO */}
-
           <Text style={{color:"#888", marginTop:20}}>
-
             Objetivo
-
           </Text>
 
 
-          <View style={{flexWrap:"wrap", flexDirection:"row"}}>
+          <View style={{flexDirection:"row", flexWrap:"wrap"}}>
 
 
             <OptionButton
@@ -529,13 +575,11 @@ studyHistory: [],
               onPress={()=>setGoal("exam")}
             />
 
-
             <OptionButton
               label="Faculdade"
               active={goal==="college"}
               onPress={()=>setGoal("college")}
             />
-
 
             <OptionButton
               label="Concurso"
@@ -543,13 +587,11 @@ studyHistory: [],
               onPress={()=>setGoal("contest")}
             />
 
-
             <OptionButton
               label="Carreira"
               active={goal==="career"}
               onPress={()=>setGoal("career")}
             />
-
 
             <OptionButton
               label="Pessoal"
@@ -565,15 +607,10 @@ studyHistory: [],
 
 
 
-
-
-          {/* FREQUÊNCIA */}
-
           <Text style={{color:"#888", marginTop:20}}>
-
             Frequência
-
           </Text>
+
 
 
           <View style={{flexDirection:"row"}}>
@@ -607,9 +644,6 @@ studyHistory: [],
 
 
 
-
-
-          {/* CRIAR */}
 
           <Pressable
 
@@ -645,14 +679,12 @@ studyHistory: [],
 
             </Text>
 
+
           </Pressable>
 
 
 
 
-
-
-          {/* CANCELAR */}
 
           <Pressable
 
@@ -660,9 +692,9 @@ studyHistory: [],
 
             style={{
 
-              padding:15,
-
               marginTop:10,
+
+              padding:15,
 
             }}
 
@@ -699,7 +731,7 @@ studyHistory: [],
 
     </Modal>
 
-
   );
 
-} 
+
+}

@@ -21,6 +21,7 @@ export type SubjectDifficulty =
 
 
 
+
 // ============================================
 // 🎯 OBJETIVO
 // ============================================
@@ -31,6 +32,7 @@ export type StudyGoal =
   | "contest"    // 🏆 Concurso
   | "career"     // 💼 Trabalho
   | "personal";  // 🧠 Interesse pessoal
+
 
 
 
@@ -48,6 +50,9 @@ export type StudyFrequency =
 
 
 
+
+
+
 // ============================================
 // 📚 CONTEÚDOS DA MATÉRIA
 // ============================================
@@ -56,20 +61,53 @@ export type StudyFrequency =
 //
 // Matemática
 //
-// - Função de 1º grau ✅
-// - Derivada ❌
-// - Matrizes ❌
+// - Função de 1º grau
+// - Derivada
+// - Matrizes
+//
+// Futuramente usado para:
+// - checklist
+// - progresso
+// - IA recomendar assuntos
 //
 
 export type SubjectContent = {
 
+
+  // 🆔 identificação
+
   id: string;
+
+
+
+  // 📖 nome do conteúdo
 
   title: string;
 
+
+
+  // 📝 explicação opcional
+
+  description?: string;
+
+
+
+  // ✅ concluído ou não
+
   completed: boolean;
 
+
+
+  // 📅 criação
+
+  createdAt: string;
+
+
 };
+
+
+
+
 
 
 
@@ -88,13 +126,38 @@ export type SubjectContent = {
 
 export type SubjectEvent = {
 
+
+  // 🆔 identificação
+
   id: string;
+
+
+
+  // 📌 nome do evento
 
   title: string;
 
+
+
+  // 📅 data
+
   date: string;
 
+
+
+  // 🏷️ tipo do evento
+
+  type:
+    | "exam"        // prova
+    | "assignment"  // trabalho
+    | "review";     // revisão
+
+
 };
+
+
+
+
 
 
 
@@ -114,15 +177,34 @@ export type SubjectEvent = {
 
 export type StudyHistory = {
 
+
+  // 🆔 identificação
+
   id: string;
+
+
+
+  // 📅 quando estudou
 
   date: string;
 
-  duration: number; // minutos
+
+
+  // ⏱️ duração em minutos
+
+  duration: number;
+
+
+
+  // ⚡ experiência ganha
 
   xpEarned: number;
 
+
 };
+
+
+
 
 
 
@@ -136,11 +218,15 @@ export type StudyHistory = {
 export type Subject = {
 
 
+
   // =========================
   // 🆔 IDENTIFICAÇÃO
   // =========================
 
   id: string;
+
+
+
 
 
 
@@ -151,10 +237,18 @@ export type Subject = {
   name: string;
 
 
+
   description?: string;
 
 
+
   color: string;
+
+image?: string;
+
+
+
+
 
 
 
@@ -166,10 +260,16 @@ export type Subject = {
   difficulty: SubjectDifficulty;
 
 
+
   goal: StudyGoal;
 
 
+
   frequency: StudyFrequency;
+
+
+
+
 
 
 
@@ -182,7 +282,13 @@ export type Subject = {
    * 0 = esqueceu tudo
    * 100 = domínio completo
    */
+
   retention: number;
+
+
+
+
+
 
 
 
@@ -191,6 +297,10 @@ export type Subject = {
   // =========================
 
   contents: SubjectContent[];
+
+
+
+
 
 
 
@@ -204,11 +314,19 @@ export type Subject = {
 
 
 
+
+
+
+
   // =========================
   // 📝 ANOTAÇÕES
   // =========================
 
   notes: string;
+
+
+
+
 
 
 
@@ -222,6 +340,10 @@ export type Subject = {
 
 
 
+
+
+
+
   // =========================
   // ⏳ CONTROLE
   // =========================
@@ -229,6 +351,9 @@ export type Subject = {
   lastStudied?: string;
 
 
+
   createdAt: string;
+
+
 
 };

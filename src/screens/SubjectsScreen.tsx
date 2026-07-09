@@ -8,6 +8,8 @@ import {
   Text,
   View,
   Pressable,
+  ScrollView,
+  Alert,
 } from "react-native";
 
 
@@ -42,40 +44,30 @@ from "../components/CreateSubjectModal";
 
 
 
+
+
 export default function SubjectsScreen(){
 
 
-
-  // =========================
-  // 🧭 NAVEGAÇÃO
-  // =========================
-
-  const navigation = useNavigation<any>();
+  const navigation =
+    useNavigation<any>();
 
 
 
 
-
-
-  // =========================
-  // 📦 CONTEXT
-  // =========================
 
   const {
     subjects,
     addSubject,
-    updateSubjects
+    updateSubjects,
+    removeSubject,
+
   } = useSubjects();
 
 
 
 
 
-
-
-  // =========================
-  // 🧠 CONTROLE DO MODAL
-  // =========================
 
   const [
     modalVisible,
@@ -88,12 +80,10 @@ export default function SubjectsScreen(){
 
 
 
-  // =========================
-  // ➕ CRIAR MATÉRIA
-  // =========================
+
 
   function handleCreate(
-    subject: Subject
+    subject:Subject
   ){
 
     addSubject(subject);
@@ -108,20 +98,18 @@ export default function SubjectsScreen(){
 
 
 
-  // =========================
-  // ⚡ GANHAR XP / RETENÇÃO
-  // =========================
-
   function handleStudy(
     id:string
   ){
 
 
     const updated =
+
       subjects.map((subject)=>{
 
 
         if(subject.id === id){
+
 
           return {
 
@@ -134,6 +122,7 @@ export default function SubjectsScreen(){
               )
 
           };
+
 
         }
 
@@ -158,9 +147,77 @@ export default function SubjectsScreen(){
 
 
 
-  // =========================
-  // 🎨 CARD DA MATÉRIA
-  // =========================
+  function handleDelete(
+    id:string,
+    name:string
+  ){
+
+
+    Alert.alert(
+
+      "Excluir matéria",
+
+      `Deseja realmente remover ${name}?`,
+
+      [
+
+        {
+          text:"Cancelar",
+          style:"cancel"
+        },
+
+
+        {
+
+          text:"Excluir",
+
+          style:"destructive",
+
+          onPress:()=>{
+
+            removeSubject(id);
+
+          }
+
+        }
+
+
+      ]
+
+    );
+
+
+  }
+
+
+
+
+
+
+
+
+
+  function handleEdit(
+    subject:Subject
+  ){
+
+    Alert.alert(
+
+      "Editar matéria",
+
+      "Sistema de edição será conectado aqui."
+
+    );
+
+  }
+
+
+
+
+
+
+
+
 
   function renderSubject(
     item:Subject
@@ -175,10 +232,6 @@ export default function SubjectsScreen(){
         key={item.id}
 
 
-        // =========================
-        // 📘 ABRIR DETALHES
-        // =========================
-
         onPress={()=>
 
 
@@ -187,9 +240,7 @@ export default function SubjectsScreen(){
             "SubjectDetails",
 
             {
-
               subject:item
-
             }
 
           )
@@ -198,29 +249,24 @@ export default function SubjectsScreen(){
         }
 
 
-
         style={{
 
 
           backgroundColor:"#161625",
 
+          padding:16,
 
-          padding:15,
+          borderRadius:15,
 
-
-          borderRadius:12,
-
-
-          marginBottom:12,
-
+          marginBottom:15,
 
           borderLeftWidth:6,
 
-
-          borderLeftColor:item.color
+          borderLeftColor:item.color,
 
 
         }}
+
 
 
       >
@@ -229,19 +275,15 @@ export default function SubjectsScreen(){
 
 
 
-
-        {/* NOME */}
-
-
         <Text
 
           style={{
 
             color:"white",
 
-            fontSize:18,
+            fontSize:19,
 
-            fontWeight:"700"
+            fontWeight:"700",
 
           }}
 
@@ -255,34 +297,26 @@ export default function SubjectsScreen(){
 
 
 
-
-        {/* RETENÇÃO */}
-
-
         <Text
 
           style={{
 
-            color:"#888",
+            color:"#aaa",
 
-            marginTop:5
+            marginTop:8,
 
           }}
 
         >
 
-          Retenção:
+          🧠 Retenção:
           {" "}
-          {item.retention.toFixed(1)}%
+          {item.retention.toFixed(0)}%
 
         </Text>
 
 
 
-
-
-
-        {/* DIFICULDADE */}
 
 
         <Text
@@ -291,13 +325,13 @@ export default function SubjectsScreen(){
 
             color:"#777",
 
-            marginTop:5
+            marginTop:5,
 
           }}
 
         >
 
-          Dificuldade:
+          🎯 Dificuldade:
           {" "}
           {item.difficulty}
 
@@ -308,37 +342,26 @@ export default function SubjectsScreen(){
 
 
 
-        {/* INDICAÇÃO */}
+
+        {/* AÇÕES */}
 
 
-        <Text
+        <View
 
           style={{
 
-            color:"#555",
+            flexDirection:"row",
 
-            marginTop:8,
+            marginTop:15,
 
-            fontSize:12
+            gap:10,
 
           }}
 
         >
 
-          Toque para abrir detalhes →
-
-        </Text>
 
 
-
-
-
-
-
-        {/* BOTÃO XP */}
-
-
-        <View>
 
 
           <Pressable
@@ -347,23 +370,116 @@ export default function SubjectsScreen(){
             onPress={()=>handleStudy(item.id)}
 
 
-
             style={{
 
 
               backgroundColor:"#7C4DFF",
 
+              padding:10,
+
+              borderRadius:10,
+
+
+            }}
+
+
+          >
+
+
+            <Text
+
+              style={{
+
+                color:"white",
+
+                fontWeight:"700",
+
+              }}
+
+            >
+
+              ⚡ XP
+
+            </Text>
+
+
+          </Pressable>
+
+
+
+
+
+
+
+          <Pressable
+
+
+            onPress={()=>handleEdit(item)}
+
+
+            style={{
+
+
+              backgroundColor:"#263238",
 
               padding:10,
 
-
-              borderRadius:8,
-
-
-              marginTop:12,
+              borderRadius:10,
 
 
-              alignSelf:"flex-start"
+            }}
+
+
+          >
+
+            <Text
+
+              style={{
+
+                color:"white"
+
+              }}
+
+            >
+
+              ✏️ Editar
+
+            </Text>
+
+
+          </Pressable>
+
+
+
+
+
+
+
+          <Pressable
+
+
+            onPress={()=>
+
+
+              handleDelete(
+
+                item.id,
+
+                item.name
+
+              )
+
+            }
+
+
+            style={{
+
+
+              backgroundColor:"#B00020",
+
+              padding:10,
+
+              borderRadius:10,
 
 
             }}
@@ -373,31 +489,28 @@ export default function SubjectsScreen(){
           >
 
 
-
             <Text
 
               style={{
 
-                color:"white",
-
-                fontWeight:"700"
+                color:"white"
 
               }}
 
             >
 
-              ⚡ Estudar +XP
+              🗑️
 
             </Text>
-
 
 
           </Pressable>
 
 
+
+
+
         </View>
-
-
 
 
 
@@ -419,33 +532,19 @@ export default function SubjectsScreen(){
 
 
 
-
-
-
-  // =========================
-  // 🧠 TELA
-  // =========================
-
   return (
-
 
     <SafeAreaView
 
-
       style={{
-
 
         flex:1,
 
-
         backgroundColor:"#080810",
-
 
         padding:20
 
-
       }}
-
 
     >
 
@@ -453,30 +552,21 @@ export default function SubjectsScreen(){
 
 
 
-
       <Text
-
 
         style={{
 
-
           color:"white",
 
+          fontSize:28,
 
-          fontSize:26,
-
-
-          fontWeight:"700"
-
+          fontWeight:"700",
 
         }}
 
-
       >
 
-
         📚 Matérias
-
 
       </Text>
 
@@ -486,16 +576,23 @@ export default function SubjectsScreen(){
 
 
 
+      <ScrollView
 
 
-      <View
+        showsVerticalScrollIndicator={false}
 
 
         style={{
 
+          marginTop:20,
 
-          marginTop:20
+        }}
 
+
+
+        contentContainerStyle={{
+
+          paddingBottom:120
 
         }}
 
@@ -504,8 +601,9 @@ export default function SubjectsScreen(){
 
 
 
-        {
 
+
+        {
           subjects.length === 0 ? (
 
 
@@ -521,24 +619,27 @@ export default function SubjectsScreen(){
 
               Nenhuma matéria criada ainda
 
+
             </Text>
 
 
-          ) : (
-
-
-            subjects.map(renderSubject)
-
 
           )
+
+
+          :
+
+
+          subjects.map(renderSubject)
 
 
         }
 
 
 
-      </View>
 
+
+      </ScrollView>
 
 
 
@@ -558,14 +659,9 @@ export default function SubjectsScreen(){
 
           backgroundColor:"#7C4DFF",
 
-
           padding:15,
 
-
           borderRadius:12,
-
-
-          marginTop:20
 
 
         }}
@@ -576,24 +672,19 @@ export default function SubjectsScreen(){
 
         <Text
 
-
           style={{
 
 
             color:"white",
 
-
             textAlign:"center",
-
 
             fontWeight:"700"
 
 
           }}
 
-
         >
-
 
           + Nova Matéria
 
@@ -611,29 +702,16 @@ export default function SubjectsScreen(){
 
 
 
-      {/* MODAL */}
-
-
       <CreateSubjectModal
-
 
 
         visible={modalVisible}
 
 
-
-        onClose={()=>
-
-
-          setModalVisible(false)
-
-
-        }
-
+        onClose={()=>setModalVisible(false)}
 
 
         onCreate={handleCreate}
-
 
 
       />
@@ -642,10 +720,7 @@ export default function SubjectsScreen(){
 
 
 
-
-
     </SafeAreaView>
-
 
   );
 

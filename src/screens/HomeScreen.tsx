@@ -3,6 +3,7 @@ import {
   Text,
   View,
   Pressable,
+  ScrollView,
 } from "react-native";
 
 import { useState } from "react";
@@ -24,11 +25,13 @@ import ProgressBar from "../components/ProgressBar";
 import { colors } from "../theme/colors";
 
 
+
 // =========================
 // 🧠 CONTEXT
 // =========================
 
 import { useSubjects } from "../contexts/SubjectsContext";
+
 
 
 // =========================
@@ -44,7 +47,8 @@ import {
 
 
 
-export default function HomeScreen() {
+
+export default function HomeScreen(){
 
 
 
@@ -66,6 +70,7 @@ export default function HomeScreen() {
 
 
 
+
   // ==================================================
   // 📚 MATÉRIAS
   // ==================================================
@@ -78,8 +83,9 @@ export default function HomeScreen() {
 
 
 
+
   // ==================================================
-  // 🧠 PLANEJAMENTO DA IA
+  // 🧠 PLANNER
   // ==================================================
 
   const studyPlan =
@@ -98,6 +104,7 @@ export default function HomeScreen() {
 
 
 
+
   // ==================================================
   // 📊 RETENÇÃO GERAL
   // ==================================================
@@ -107,13 +114,16 @@ export default function HomeScreen() {
       ? 0
       :
       Math.round(
+
         subjects.reduce(
-          (total, subject) =>
+          (total, subject)=>
             total + subject.retention,
+
           0
         )
         /
         subjects.length
+
       );
 
 
@@ -122,34 +132,41 @@ export default function HomeScreen() {
 
 
 
+
+
   // ==================================================
-  // 🎯 SELETOR DE MODO
+  // 🎯 BOTÃO DE MODO
   // ==================================================
 
-  function ModeButton(
-    {
-      title,
-      mode,
-      description
-    }:
-    {
-      title:string;
-      mode:
-      "manual" |
-      "guided" |
-      "auto";
-      description:string;
-    }
-  ){
+  function ModeButton({
+
+    title,
+
+    mode,
+
+    description,
+
+  }:{
+    title:string;
+
+    mode:
+    "manual" |
+    "guided" |
+    "auto";
+
+    description:string;
+
+  }){
 
 
     return (
 
       <Pressable
 
-        onPress={() =>
+        onPress={()=>
           setStudyMode(mode)
         }
+
 
         style={{
 
@@ -160,9 +177,12 @@ export default function HomeScreen() {
           borderRadius:12,
 
           backgroundColor:
+
             studyMode === mode
-              ? "#7C4DFF"
-              : "#161625",
+
+            ? "#7C4DFF"
+
+            : "#161625",
 
         }}
 
@@ -187,6 +207,7 @@ export default function HomeScreen() {
 
 
 
+
         <Text
 
           style={{
@@ -206,7 +227,9 @@ export default function HomeScreen() {
         </Text>
 
 
+
       </Pressable>
+
 
     );
 
@@ -218,30 +241,49 @@ export default function HomeScreen() {
 
 
 
-  // ==================================================
-  // 🧠 TELA
-  // ==================================================
+
+
+
+
 
   return (
 
+
     <SafeAreaView
 
-      style={{
+style={{
 
-        flex:1,
+flex:1,
 
-        backgroundColor:
-          colors.background,
+backgroundColor:colors.background,
 
-        padding:20,
+}}
 
-      }}
+>
 
-    >
+
+
+      <ScrollView
+
+        showsVerticalScrollIndicator={false}
+
+        contentContainerStyle={{
+
+          padding:20,
+
+          paddingBottom:40,
+
+        }}
+
+      >
+
+
+
 
 
 
       {/* HEADER */}
+
 
       <Text
 
@@ -263,12 +305,12 @@ export default function HomeScreen() {
 
 
 
+
       <Text
 
         style={{
 
-          color:
-            colors.subtitle,
+          color:colors.subtitle,
 
           marginBottom:20,
 
@@ -285,8 +327,11 @@ export default function HomeScreen() {
 
 
 
+
+
+
       {/* =========================
-          ESCOLHA DO PLANEJAMENTO
+          MODO DE ESTUDO
       ========================= */}
 
 
@@ -313,6 +358,7 @@ export default function HomeScreen() {
 
 
 
+
         <ModeButton
 
           title="📝 Manual"
@@ -322,6 +368,7 @@ export default function HomeScreen() {
           description="Você escolhe suas matérias"
 
         />
+
 
 
 
@@ -337,6 +384,7 @@ export default function HomeScreen() {
 
 
 
+
         <ModeButton
 
           title="🤖 Automático"
@@ -348,7 +396,9 @@ export default function HomeScreen() {
         />
 
 
+
       </MentalisCard>
+
 
 
 
@@ -384,6 +434,7 @@ export default function HomeScreen() {
 
 
 
+
         {
           studyMode === null ? (
 
@@ -392,8 +443,7 @@ export default function HomeScreen() {
 
               style={{
 
-                color:
-                  colors.subtitle,
+                color:colors.subtitle,
 
                 marginTop:15,
 
@@ -409,7 +459,6 @@ export default function HomeScreen() {
 
           )
 
-
           :
 
           todayTraining.length === 0 ? (
@@ -419,8 +468,7 @@ export default function HomeScreen() {
 
               style={{
 
-                color:
-                  colors.subtitle,
+                color:colors.subtitle,
 
                 marginTop:15,
 
@@ -435,12 +483,14 @@ export default function HomeScreen() {
 
           )
 
-
           :
 
 
-          todayTraining.map(
-            (item)=>(
+          todayTraining
+
+          .slice(0,3)
+
+          .map((item)=>(
 
 
             <View
@@ -448,6 +498,7 @@ export default function HomeScreen() {
               key={
                 item.subject.id
               }
+
 
               style={{
 
@@ -467,6 +518,7 @@ export default function HomeScreen() {
               }}
 
             >
+
 
 
               <Text
@@ -489,6 +541,7 @@ export default function HomeScreen() {
 
 
 
+
               <Text
 
                 style={{
@@ -506,6 +559,7 @@ export default function HomeScreen() {
                 {item.priority}%
 
               </Text>
+
 
 
 
@@ -535,6 +589,7 @@ export default function HomeScreen() {
         }
 
 
+
       </MentalisCard>
 
 
@@ -545,18 +600,29 @@ export default function HomeScreen() {
 
 
 
-      {/* =========================
-          XP
-      ========================= */}
+      {/* XP */}
 
 
-      <XPBar
+      <View
 
-        level={1}
+        style={{
 
-        xp={0}
+          marginTop:20,
 
-      />
+        }}
+
+      >
+
+        <XPBar
+
+          level={1}
+
+          xp={0}
+
+        />
+
+
+      </View>
 
 
 
@@ -566,9 +632,7 @@ export default function HomeScreen() {
 
 
 
-      {/* =========================
-          EVOLUÇÃO
-      ========================= */}
+      {/* EVOLUÇÃO */}
 
 
       <MentalisCard>
@@ -595,15 +659,12 @@ export default function HomeScreen() {
 
         <ProgressBar
 
-          value={
-            averageRetention
-          }
+          value={averageRetention}
 
-          color={
-            colors.success
-          }
+          color={colors.success}
 
         />
+
 
 
 
@@ -611,8 +672,7 @@ export default function HomeScreen() {
 
           style={{
 
-            color:
-              colors.success,
+            color:colors.success,
 
             marginTop:8,
 
@@ -640,106 +700,19 @@ export default function HomeScreen() {
 
 
 
-      {/* =========================
-          LISTA DAS MATÉRIAS
-      ========================= */}
-
-
-
-      <MentalisCard>
-
-
-        <Text
-
-          style={{
-
-            color:colors.text,
-
-            fontWeight:"700",
-
-          }}
-
-        >
-
-          📚 Suas matérias
-
-        </Text>
-
-
-
-        {
-          subjects.map(
-            (subject)=>(
-
-
-            <View
-
-              key={subject.id}
-
-              style={{
-
-                marginTop:10,
-
-                flexDirection:"row",
-
-                justifyContent:"space-between",
-
-              }}
-
-            >
-
-
-              <Text
-
-                style={{
-
-                  color:"white",
-
-                }}
-
-              >
-
-                {subject.name}
-
-              </Text>
-
-
-
-              <Text
-
-                style={{
-
-                  color:
-                    subject.color,
-
-                  fontWeight:"700",
-
-                }}
-
-              >
-
-                {subject.retention}%
-
-              </Text>
-
-
-            </View>
-
-
-          ))
-
-        }
-
-
-      </MentalisCard>
+      
 
 
 
 
+
+      </ScrollView>
 
 
     </SafeAreaView>
 
+
   );
+
 
 }
