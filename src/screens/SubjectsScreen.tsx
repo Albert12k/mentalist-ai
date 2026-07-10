@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 
 
@@ -238,6 +239,35 @@ const {
   name:string
 ){
 
+  // 🌐 No navegador (react-native-web), o Alert.alert
+  // com múltiplos botões (Cancelar/Excluir) não é
+  // implementado — nada aparece na tela, e o onPress
+  // do botão "Excluir" nunca roda. Por isso o delete
+  // "não fazia nada" só no npx expo start --web.
+  //
+  // Solução: usar window.confirm como alternativa
+  // quando a plataforma for web.
+
+  if(Platform.OS === "web"){
+
+    const confirmado = window.confirm(
+      `Deseja remover ${name}?`
+    );
+
+    if(confirmado){
+
+      removeSubject(id);
+
+    }
+
+    return;
+
+  }
+
+
+  // 📱 No celular (iOS/Android) o Alert.alert nativo
+  // funciona normalmente.
+
   Alert.alert(
 
     "Excluir matéria",
@@ -259,12 +289,6 @@ const {
         style:"destructive",
 
         onPress:()=>{
-
-
-          console.log(
-            "Removendo:",
-            id
-          );
 
 
           removeSubject(id);
