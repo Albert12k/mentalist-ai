@@ -13,6 +13,7 @@ import {
 } from "react-native";
 
 
+
 // 🧭 NAVEGAÇÃO
 
 import {
@@ -23,7 +24,9 @@ import {
 
 // 🎨 TIPOS
 
-import { Subject } from "../types/Subject";
+import {
+  Subject
+} from "../types/Subject";
 
 
 
@@ -41,6 +44,11 @@ import CreateSubjectModal
 from "../components/CreateSubjectModal";
 
 
+import EditSubjectModal
+from "../components/EditSubjectModal";
+
+
+
 
 
 
@@ -54,32 +62,60 @@ export default function SubjectsScreen(){
 
 
 
+  
+const {
+
+  subjects,
+
+  addSubject,
+
+  updateSubjects,
+
+  updateSubject,
+
+  removeSubject,
+
+} = useSubjects();
 
 
-  const {
-    subjects,
-    addSubject,
-    updateSubjects,
-    removeSubject,
-
-  } = useSubjects();
+  // =========================
+  // MODAIS
+  // =========================
 
 
-
+  const [
+    createVisible,
+    setCreateVisible
+  ] = useState(false);
 
 
 
   const [
-    modalVisible,
-    setModalVisible
+    editVisible,
+    setEditVisible
   ] = useState(false);
 
 
 
 
+  const [
+    selectedSubject,
+    setSelectedSubject
+  ] = useState<Subject | null>(null);
 
 
 
+
+
+
+
+
+
+
+
+  // =========================
+  // CRIAR MATÉRIA
+  // =========================
 
 
   function handleCreate(
@@ -98,95 +134,48 @@ export default function SubjectsScreen(){
 
 
 
+  // =========================
+  // ESTUDAR + XP
+  // =========================
+  // 🔧 CORRIGIDO: antes essa função montava um array
+  // inteiro (updated) com .map(), mas tentava salvar
+  // chamando updateSubject(updatedSubject) — variável
+  // que não existia (typo).
+  //
+  // Agora: acha a matéria pelo id, monta só o objeto
+  // atualizado, e chama updateSubject passando UMA
+  // matéria (igual já é feito em handleSaveEdit).
+
+
   function handleStudy(
     id:string
   ){
 
 
-    const updated =
-
-      subjects.map((subject)=>{
-
-
-        if(subject.id === id){
-
-
-          return {
-
-            ...subject,
-
-            retention:
-              Math.min(
-                subject.retention + 5,
-                100
-              )
-
-          };
-
-
-        }
-
-
-        return subject;
-
-
-      });
-
-
-
-    updateSubjects(updated);
-
-
-  }
-
-
-
-
-
-
-
-
-
-  function handleDelete(
-    id:string,
-    name:string
-  ){
-
-
-    Alert.alert(
-
-      "Excluir matéria",
-
-      `Deseja realmente remover ${name}?`,
-
-      [
-
-        {
-          text:"Cancelar",
-          style:"cancel"
-        },
-
-
-        {
-
-          text:"Excluir",
-
-          style:"destructive",
-
-          onPress:()=>{
-
-            removeSubject(id);
-
-          }
-
-        }
-
-
-      ]
-
+    const subject = subjects.find(
+      (s)=> s.id === id
     );
 
 
+    if(!subject) return;
+
+
+    const subjectAtualizada:Subject = {
+
+      ...subject,
+
+      retention:
+        Math.min(
+          subject.retention + 5,
+          100
+        )
+
+    };
+
+
+    updateSubject(subjectAtualizada);
+
+
   }
 
 
@@ -195,19 +184,22 @@ export default function SubjectsScreen(){
 
 
 
+
+
+  // =========================
+  // ABRIR EDIÇÃO
+  // =========================
 
 
   function handleEdit(
     subject:Subject
   ){
 
-    Alert.alert(
 
-      "Editar matéria",
+    setSelectedSubject(subject);
 
-      "Sistema de edição será conectado aqui."
+    setEditVisible(true);
 
-    );
 
   }
 
@@ -217,6 +209,79 @@ export default function SubjectsScreen(){
 
 
 
+
+
+  // =========================
+  // SALVAR EDIÇÃO
+  // =========================
+
+
+ function handleSaveEdit(
+  subjectUpdated: Subject
+){
+
+  updateSubject(subjectUpdated);
+
+
+  setEditVisible(false);
+
+  setSelectedSubject(null);
+
+}
+  // =========================
+  // EXCLUIR
+  // =========================
+
+
+ function handleDelete(
+  id:string,
+  name:string
+){
+
+  Alert.alert(
+
+    "Excluir matéria",
+
+    `Deseja remover ${name}?`,
+
+    [
+
+      {
+        text:"Cancelar",
+        style:"cancel"
+      },
+
+
+      {
+
+        text:"Excluir",
+
+        style:"destructive",
+
+        onPress:()=>{
+
+
+          console.log(
+            "Removendo:",
+            id
+          );
+
+
+          removeSubject(id);
+
+
+        }
+
+      }
+
+    ]
+
+  );
+
+}
+  // =========================
+  // CARD DA MATÉRIA
+  // =========================
 
 
   function renderSubject(
@@ -226,27 +291,11 @@ export default function SubjectsScreen(){
 
     return (
 
-      <Pressable
+
+      <View
 
 
         key={item.id}
-
-
-        onPress={()=>
-
-
-          navigation.navigate(
-
-            "SubjectDetails",
-
-            {
-              subject:item
-            }
-
-          )
-
-
-        }
 
 
         style={{
@@ -268,82 +317,100 @@ export default function SubjectsScreen(){
         }}
 
 
-
       >
 
 
 
 
+        <Pressable
 
-        <Text
 
-          style={{
+          onPress={()=>
 
-            color:"white",
 
-            fontSize:19,
+            navigation.navigate(
 
-            fontWeight:"700",
+              "SubjectDetails",
 
-          }}
+              {
+                subject:item
+              }
+
+            )
+
+          }
+
 
         >
 
-          📘 {item.name}
 
-        </Text>
+          <Text
 
+            style={{
 
+              color:"white",
 
+              fontSize:19,
 
+              fontWeight:"700",
 
-        <Text
+            }}
 
-          style={{
+          >
 
-            color:"#aaa",
+            📘 {item.name}
 
-            marginTop:8,
-
-          }}
-
-        >
-
-          🧠 Retenção:
-          {" "}
-          {item.retention.toFixed(0)}%
-
-        </Text>
+          </Text>
 
 
 
 
+          <Text
 
-        <Text
+            style={{
 
-          style={{
+              color:"#aaa",
 
-            color:"#777",
+              marginTop:8,
 
-            marginTop:5,
+            }}
 
-          }}
+          >
 
-        >
+            🧠 Retenção:
+            {" "}
+            {item.retention}%
 
-          🎯 Dificuldade:
-          {" "}
-          {item.difficulty}
-
-        </Text>
-
+          </Text>
 
 
 
 
+          <Text
+
+            style={{
+
+              color:"#777",
+
+              marginTop:5,
+
+            }}
+
+          >
+
+            🎯 Dificuldade:
+            {" "}
+            {item.difficulty}
+
+          </Text>
 
 
-        {/* AÇÕES */}
+        </Pressable>
+
+
+
+
+
 
 
         <View
@@ -392,7 +459,7 @@ export default function SubjectsScreen(){
 
                 color:"white",
 
-                fontWeight:"700",
+                fontWeight:"700"
 
               }}
 
@@ -432,6 +499,7 @@ export default function SubjectsScreen(){
 
           >
 
+
             <Text
 
               style={{
@@ -448,6 +516,7 @@ export default function SubjectsScreen(){
 
 
           </Pressable>
+
 
 
 
@@ -485,7 +554,6 @@ export default function SubjectsScreen(){
             }}
 
 
-
           >
 
 
@@ -516,7 +584,7 @@ export default function SubjectsScreen(){
 
 
 
-      </Pressable>
+      </View>
 
 
     );
@@ -532,11 +600,18 @@ export default function SubjectsScreen(){
 
 
 
+
+
+
+
   return (
+
 
     <SafeAreaView
 
+
       style={{
+
 
         flex:1,
 
@@ -544,17 +619,20 @@ export default function SubjectsScreen(){
 
         padding:20
 
+
       }}
+
 
     >
 
 
 
 
-
       <Text
 
+
         style={{
+
 
           color:"white",
 
@@ -562,13 +640,16 @@ export default function SubjectsScreen(){
 
           fontWeight:"700",
 
+
         }}
+
 
       >
 
         📚 Matérias
 
       </Text>
+
 
 
 
@@ -584,10 +665,9 @@ export default function SubjectsScreen(){
 
         style={{
 
-          marginTop:20,
+          marginTop:20
 
         }}
-
 
 
         contentContainerStyle={{
@@ -601,9 +681,8 @@ export default function SubjectsScreen(){
 
 
 
-
-
         {
+
           subjects.length === 0 ? (
 
 
@@ -623,7 +702,6 @@ export default function SubjectsScreen(){
             </Text>
 
 
-
           )
 
 
@@ -637,9 +715,8 @@ export default function SubjectsScreen(){
 
 
 
-
-
       </ScrollView>
+
 
 
 
@@ -651,7 +728,7 @@ export default function SubjectsScreen(){
       <Pressable
 
 
-        onPress={()=>setModalVisible(true)}
+        onPress={()=>setCreateVisible(true)}
 
 
         style={{
@@ -684,6 +761,7 @@ export default function SubjectsScreen(){
 
           }}
 
+
         >
 
           + Nova Matéria
@@ -705,10 +783,10 @@ export default function SubjectsScreen(){
       <CreateSubjectModal
 
 
-        visible={modalVisible}
+        visible={createVisible}
 
 
-        onClose={()=>setModalVisible(false)}
+        onClose={()=>setCreateVisible(false)}
 
 
         onCreate={handleCreate}
@@ -720,7 +798,50 @@ export default function SubjectsScreen(){
 
 
 
+
+
+
+
+      {
+        selectedSubject && (
+
+
+          <EditSubjectModal
+
+
+            visible={editVisible}
+
+
+            subject={selectedSubject}
+
+
+            onClose={()=>{
+
+
+              setEditVisible(false);
+
+              setSelectedSubject(null);
+
+
+            }}
+
+
+            onSave={handleSaveEdit}
+
+
+          />
+
+
+        )
+
+      }
+
+
+
+
+
     </SafeAreaView>
+
 
   );
 

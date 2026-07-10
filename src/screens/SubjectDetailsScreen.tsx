@@ -3,10 +3,14 @@ import {
   Text,
   View,
   Pressable,
+  ScrollView,
 } from "react-native";
 
 
-// 🧭 NAVEGAÇÃO
+import {
+  useState
+} from "react";
+
 
 import {
   useRoute,
@@ -21,6 +25,22 @@ import {
 } from "../types/Subject";
 
 
+// 🧠 CONTEXT
+
+import {
+  useSubjects
+} from "../contexts/SubjectsContext";
+
+
+// 🧩 MODAL
+
+import AddContentModal
+from "../components/AddContentModal";
+
+
+
+
+
 
 
 
@@ -28,12 +48,9 @@ export default function SubjectDetailsScreen(){
 
 
 
-  // =========================
-  // 🧭 NAVEGAÇÃO
-  // =========================
+  const navigation =
+    useNavigation<any>();
 
-
-  const navigation = useNavigation();
 
 
   const route =
@@ -41,14 +58,140 @@ export default function SubjectDetailsScreen(){
 
 
 
+
+
+
   // =========================
-  // 📚 MATÉRIA RECEBIDA
+  // 📚 MATÉRIA
   // =========================
 
 
-  const subject:
-    Subject =
-      route.params.subject;
+  const routeSubject:Subject =
+    route.params.subject;
+
+
+
+
+
+  const {
+
+    subjects,
+
+    updateSubjects,
+
+  } = useSubjects();
+
+
+
+
+
+
+
+  const subject =
+  subjects.find(
+    item =>
+      item.id === routeSubject.id
+  )
+  ||
+  routeSubject;
+
+
+subject.contents ??= [];
+
+subject.events ??= [];
+
+subject.notes ??= "";
+
+subject.studyHistory ??= [];
+
+// =========================
+  // 📚 MODAL CONTEÚDO
+  // =========================
+
+
+  const [
+
+    contentVisible,
+
+    setContentVisible
+
+  ] = useState(false);
+
+
+
+
+
+
+
+
+
+  // =========================
+  // ➕ ADICIONAR CONTEÚDO
+  // =========================
+
+
+  function handleAddContent(
+    content:any
+  ){
+
+
+
+    const updated =
+
+      subjects.map((item)=>{
+
+
+
+        if(item.id === subject.id){
+
+
+          return {
+
+
+            ...item,
+
+
+            contents:[
+
+              ...item.contents,
+
+              content
+
+            ]
+
+
+          };
+
+
+        }
+
+
+
+
+
+        return item;
+
+
+
+      });
+
+
+
+
+
+
+    updateSubjects(updated);
+
+
+
+  }
+
+
+
+
+
+
+
 
 
 
@@ -69,9 +212,6 @@ export default function SubjectDetailsScreen(){
         backgroundColor:"#080810",
 
 
-        padding:20
-
-
       }}
 
 
@@ -80,73 +220,20 @@ export default function SubjectDetailsScreen(){
 
 
 
-      {/* =========================
-          HEADER
-         ========================= */}
+
+      <ScrollView
 
 
-
-      <Pressable
-
-
-        onPress={()=>navigation.goBack()}
+        showsVerticalScrollIndicator={false}
 
 
-      >
-
-        <Text
-
-          style={{
-
-            color:"#7C4DFF",
-
-            fontSize:16
-
-          }}
-
-        >
-
-          ← Voltar
-
-        </Text>
-
-
-      </Pressable>
-
-
-
-
-
-
-
-      {/* =========================
-          IDENTIDADE DA MATÉRIA
-         ========================= */}
-
-
-
-      <View
-
-
-        style={{
-
-
-          marginTop:20,
-
-
-          backgroundColor:"#161625",
+        contentContainerStyle={{
 
 
           padding:20,
 
 
-          borderRadius:15,
-
-
-          borderLeftWidth:6,
-
-
-          borderLeftColor:subject.color
+          paddingBottom:50
 
 
         }}
@@ -156,19 +243,84 @@ export default function SubjectDetailsScreen(){
 
 
 
-        <Text
+
+
+
+
+        {/* VOLTAR */}
+
+
+        <Pressable
+
+
+          onPress={()=>navigation.goBack()}
+
+
+        >
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#7C4DFF",
+
+
+              fontSize:16
+
+
+            }}
+
+
+          >
+
+
+            ← Voltar
+
+
+          </Text>
+
+
+        </Pressable>
+
+
+
+
+
+
+
+
+
+        {/* IDENTIDADE */}
+
+
+
+        <View
 
 
           style={{
 
 
-            color:"white",
+
+            marginTop:20,
 
 
-            fontSize:28,
+            backgroundColor:"#161625",
 
 
-            fontWeight:"700"
+            padding:20,
+
+
+            borderRadius:16,
+
+
+            borderLeftWidth:6,
+
+
+            borderLeftColor:subject.color
+
 
 
           }}
@@ -177,25 +329,266 @@ export default function SubjectDetailsScreen(){
         >
 
 
-          📘 {subject.name}
-
-
-        </Text>
 
 
 
+          <Text
 
 
-        <Text
+            style={{
+
+
+
+              color:"white",
+
+
+              fontSize:28,
+
+
+              fontWeight:"700"
+
+
+
+            }}
+
+
+          >
+
+
+            📘 {subject.name}
+
+
+          </Text>
+
+
+
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#aaa",
+
+
+              marginTop:10
+
+
+            }}
+
+
+          >
+
+
+            🧠 Retenção:
+
+            {" "}
+
+            {subject.retention}%
+
+
+          </Text>
+
+
+
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#aaa",
+
+
+              marginTop:8
+
+
+            }}
+
+
+          >
+
+
+            🎯 {subject.difficulty}
+
+
+          </Text>
+
+
+
+
+
+        </View>
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* CONFIGURAÇÃO */}
+
+
+
+        <View
 
 
           style={{
 
 
-            color:"#888",
+            marginTop:20,
 
 
-            marginTop:10
+            backgroundColor:"#161625",
+
+
+            padding:16,
+
+
+            borderRadius:16
+
+
+          }}
+
+
+
+        >
+
+
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"white",
+
+
+              fontSize:18,
+
+
+              fontWeight:"700"
+
+
+            }}
+
+
+          >
+
+
+            🧠 Configuração
+
+
+          </Text>
+
+
+
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#aaa",
+
+
+              marginTop:10
+
+
+            }}
+
+
+          >
+
+
+            Objetivo:
+
+            {" "}
+
+            {subject.goal}
+
+
+          </Text>
+
+
+
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#aaa",
+
+
+              marginTop:8
+
+
+            }}
+
+
+          >
+
+
+            Frequência:
+
+            {" "}
+
+            {subject.frequency}
+
+
+          </Text>
+
+
+
+
+
+        </View>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* CONTEÚDOS */}
+
+
+
+        <View
+
+
+          style={{
+
+
+            marginTop:25
 
 
           }}
@@ -204,17 +597,109 @@ export default function SubjectDetailsScreen(){
         >
 
 
-          Retenção:
-          {" "}
-          {subject.retention.toFixed(1)}%
-
-
-        </Text>
 
 
 
 
-      </View>
+          <View
+
+
+            style={{
+
+
+              flexDirection:"row",
+
+
+              justifyContent:"space-between",
+
+
+              alignItems:"center"
+
+
+
+            }}
+
+
+
+          >
+
+
+
+
+            <Text
+
+
+              style={{
+
+
+                color:"white",
+
+
+                fontSize:20,
+
+
+                fontWeight:"700"
+
+
+              }}
+
+
+            >
+
+
+              📚 Conteúdos
+
+
+            </Text>
+
+
+
+
+
+
+
+            <Pressable
+
+
+              onPress={()=>setContentVisible(true)}
+
+
+            >
+
+
+              <Text
+
+
+                style={{
+
+
+                  color:"#7C4DFF",
+
+
+                  fontWeight:"700"
+
+
+                }}
+
+
+
+              >
+
+
+                + Adicionar
+
+
+              </Text>
+
+
+
+            </Pressable>
+
+
+
+
+
+          </View>
 
 
 
@@ -223,51 +708,153 @@ export default function SubjectDetailsScreen(){
 
 
 
-      {/* =========================
-          INFORMAÇÕES INTELIGENTES
-         ========================= */}
+
+         {
+  (subject.contents ?? []).length === 0 ? (
 
 
 
-      <View
+              <Text
 
 
-        style={{
+                style={{
 
 
-          marginTop:20,
+                  color:"#777",
 
 
-          backgroundColor:"#161625",
+                  marginTop:10
 
 
-          padding:15,
-
-
-          borderRadius:15
-
-
-        }}
-
-
-      >
+                }}
 
 
 
+              >
 
-        <Text
+
+                Nenhum conteúdo cadastrado.
+
+
+              </Text>
+
+
+
+            )
+
+
+
+            :
+
+
+
+
+
+            (subject.contents ?? []).map((content)=>(
+
+
+
+              <View
+
+
+                key={content.id}
+
+
+                style={{
+
+
+                  backgroundColor:"#141424",
+
+
+                  padding:12,
+
+
+                  borderRadius:10,
+
+
+                  marginTop:10
+
+
+
+                }}
+
+
+
+              >
+
+
+
+
+
+                <Text
+
+
+                  style={{
+
+
+                    color:"white"
+
+
+                  }}
+
+
+
+                >
+
+
+                  {content.completed ? "✅" : "⬜"}
+
+                  {" "}
+
+                  {content.title}
+
+
+
+                </Text>
+
+
+
+
+
+              </View>
+
+
+
+            ))
+
+
+          }
+
+
+
+
+
+        </View>
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* EVENTOS */}
+
+
+
+
+        <View
 
 
           style={{
 
 
-            color:"white",
-
-
-            fontSize:18,
-
-
-            fontWeight:"700"
+            marginTop:25
 
 
           }}
@@ -276,276 +863,218 @@ export default function SubjectDetailsScreen(){
         >
 
 
-          🧠 Informações
-
-
-        </Text>
 
 
 
+          <Text
+
+
+            style={{
+
+
+              color:"white",
+
+
+              fontSize:20,
+
+
+              fontWeight:"700"
+
+
+            }}
+
+
+          >
+
+
+            📅 Datas importantes
+
+
+          </Text>
 
 
 
-        <Text
+
+
+
+          <Text
+
+
+            style={{
+
+
+              color:"#777",
+
+
+              marginTop:10
+
+
+            }}
+
+
+
+          >
+
+
+            Nenhuma data cadastrada.
+
+
+          </Text>
+
+
+
+
+
+        </View>
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* NOTAS */}
+
+
+
+
+
+        <View
 
 
           style={{
 
 
-            color:"#aaa",
+            marginTop:25,
 
 
-            marginTop:10
+            backgroundColor:"#161625",
 
 
-          }}
+            padding:16,
 
 
-        >
-
-
-          Dificuldade:
-          {" "}
-          {subject.difficulty}
-
-
-        </Text>
-
-
-
-
-
-        <Text
-
-
-          style={{
-
-
-            color:"#aaa",
-
-
-            marginTop:8
+            borderRadius:16
 
 
           }}
 
 
-        >
-
-
-          Objetivo:
-          {" "}
-          {subject.goal}
-
-
-        </Text>
-
-
-
-
-
-        <Text
-
-
-          style={{
-
-
-            color:"#aaa",
-
-
-            marginTop:8
-
-
-          }}
-
 
         >
 
 
-          Frequência:
-          {" "}
-          {subject.frequency}
 
 
-        </Text>
+          <Text
 
 
+            style={{
 
 
+              color:"white",
 
 
-      </View>
+              fontSize:20,
 
 
+              fontWeight:"700"
 
 
+            }}
 
 
 
+          >
 
-      {/* =========================
-          CONTEÚDOS
-         ========================= */}
 
+            📝 Anotações
 
 
-      <View
+          </Text>
 
 
-        style={{
 
 
-          marginTop:20
 
 
-        }}
+          <Text
 
 
-      >
+            style={{
 
 
+              color:"#888",
 
-        <Text
 
+              marginTop:10
 
-          style={{
 
+            }}
 
-            color:"white",
 
 
-            fontSize:20,
+          >
 
 
-            fontWeight:"700"
+            {
 
 
-          }}
+              subject.notes ||
 
+              "Nenhuma anotação ainda."
 
-        >
 
+            }
 
-          📚 Conteúdos
 
 
-        </Text>
+          </Text>
 
 
 
 
-        <Text
 
 
-          style={{
+        </View>
 
 
-            color:"#777",
 
 
-            marginTop:8
 
 
-          }}
 
 
-        >
 
+      </ScrollView>
 
-          Nenhum conteúdo cadastrado ainda.
 
 
-        </Text>
 
 
 
-      </View>
 
 
 
+      <AddContentModal
 
 
+        visible={contentVisible}
 
 
+        onClose={()=>setContentVisible(false)}
 
-      {/* =========================
-          EVENTOS
-         ========================= */}
 
+        onAdd={handleAddContent}
 
 
-      <View
-
-
-        style={{
-
-
-          marginTop:20
-
-
-        }}
-
-
-      >
-
-
-
-        <Text
-
-
-          style={{
-
-
-            color:"white",
-
-
-            fontSize:20,
-
-
-            fontWeight:"700"
-
-
-          }}
-
-
-        >
-
-
-          📅 Datas importantes
-
-
-        </Text>
-
-
-
-
-
-        <Text
-
-
-          style={{
-
-
-            color:"#777",
-
-
-            marginTop:8
-
-
-          }}
-
-
-        >
-
-
-          Nenhuma data cadastrada.
-
-
-        </Text>
-
-
-
-      </View>
+      />
 
 
 
