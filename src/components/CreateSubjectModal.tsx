@@ -86,6 +86,8 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
       absences: 0,
       contents: [],
       materials: [],
+      flashcards: [],
+      quizzes: [],
       events: [],
       notes: "",
       studyHistory: [],

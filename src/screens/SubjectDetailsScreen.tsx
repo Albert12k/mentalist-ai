@@ -16,10 +16,14 @@ import * as ImagePicker from "expo-image-picker";
 
 import AddContentModal from "../components/AddContentModal";
 import AddEventModal from "../components/AddEventModal";
+import AddFlashcardModal from "../components/AddFlashcardModal";
 import AudioRecorderModal from "../components/AudioRecorderModal";
+import CreateQuizModal from "../components/CreateQuizModal";
 import EditNotesModal from "../components/EditNotesModal";
+import FlashcardPracticeModal from "../components/FlashcardPracticeModal";
 import MaterialCard from "../components/MaterialCard";
 import MaterialImportModal from "../components/MaterialImportModal";
+import QuizPlayerModal from "../components/QuizPlayerModal";
 import StudySessionModal from "../components/StudySessionModal";
 import { useSubjects } from "../contexts/SubjectsContext";
 import {
@@ -30,8 +34,22 @@ import {
   persistImportedMaterial,
   suggestMaterialCategory,
 } from "../services/materials";
+import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
+import {
+  FlashcardReviewRating,
+  formatNextReview,
+  getDueFlashcards,
+  reviewFlashcard,
+} from "../services/flashcardReview";
 import { recordStudySession } from "../services/studySession";
-import { Subject, SubjectContent, SubjectEvent, SubjectMaterial } from "../types/Subject";
+import {
+  Subject,
+  SubjectContent,
+  SubjectEvent,
+  SubjectFlashcard,
+  SubjectMaterial,
+  SubjectQuiz,
+} from "../types/Subject";
 
 type StudySessionInput = {
   durationMinutes: number;
@@ -60,13 +78,21 @@ export default function SubjectDetailsScreen() {
   const [studySessionVisible, setStudySessionVisible] = useState(false);
   const [materialVisible, setMaterialVisible] = useState(false);
   const [audioVisible, setAudioVisible] = useState(false);
+  const [flashcardCreateVisible, setFlashcardCreateVisible] = useState(false);
+  const [flashcardPracticeVisible, setFlashcardPracticeVisible] = useState(false);
+  const [quizCreateVisible, setQuizCreateVisible] = useState(false);
+  const [quizPlayerVisible, setQuizPlayerVisible] = useState(false);
   const [editingContent, setEditingContent] = useState<SubjectContent | null>(null);
   const [editingEvent, setEditingEvent] = useState<SubjectEvent | null>(null);
   const [materialDraft, setMaterialDraft] = useState<MaterialDraft | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<SubjectMaterial | null>(null);
+  const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
   const materials = subject.materials ?? [];
+  const flashcards = subject.flashcards ?? [];
+  const quizzes = subject.quizzes ?? [];
+  const dueFlashcards = getDueFlashcards(flashcards);
 
   function closeContentModal() {
     setContentVisible(false);
@@ -230,6 +256,81 @@ export default function SubjectDetailsScreen() {
     setMaterialDraft(null);
   }
 
+  function handleSaveFlashcard(flashcard: SubjectFlashcard) {
+    updateSubject({ ...subject, flashcards: [...flashcards, flashcard] });
+    setFlashcardCreateVisible(false);
+  }
+
+  function handleGenerateFlashcards() {
+    const generatedFlashcards = generateFlashcardsFromSubject(subject, flashcards);
+
+    if (generatedFlashcards.length === 0) {
+      Alert.alert(
+        "Nada novo para gerar",
+        "Adicione conteúdos à matéria ou crie flashcards manuais para complementar a revisão.",
+      );
+      return;
+    }
+
+    updateSubject({ ...subject, flashcards: [...flashcards, ...generatedFlashcards] });
+    Alert.alert("Flashcards criados", `${generatedFlashcards.length} flashcard(s) foram gerados a partir dos conteúdos.`);
+  }
+
+  function handleReviewedFlashcard(flashcard: SubjectFlashcard, rating: FlashcardReviewRating) {
+    updateSubject({
+      ...subject,
+      flashcards: flashcards.map((item) => item.id === flashcard.id
+        ? reviewFlashcard(item, rating)
+        : item),
+    });
+  }
+
+  function handleSaveQuiz(quiz: SubjectQuiz) {
+    updateSubject({ ...subject, quizzes: [...quizzes, quiz] });
+    setQuizCreateVisible(false);
+  }
+
+  function handleGenerateQuiz() {
+    const quiz = generateQuizFromSubject(subject);
+
+    if (!quiz) {
+      Alert.alert(
+        "Descrição necessária",
+        "Adicione uma descrição aos conteúdos da matéria para o Mentalis criar perguntas confiáveis.",
+      );
+      return;
+    }
+
+    const sourceContentIds = quiz.sourceContentIds ?? [];
+    const alreadyGenerated = quizzes.some((item) => {
+      const existingSourceContentIds = item.sourceContentIds ?? [];
+
+      return existingSourceContentIds.length === sourceContentIds.length
+        && existingSourceContentIds.every((contentId) => sourceContentIds.includes(contentId));
+    });
+
+    if (alreadyGenerated) {
+      Alert.alert("Quiz já criado", "Exclua o quiz anterior antes de gerar outro com os mesmos conteúdos.");
+      return;
+    }
+
+    updateSubject({ ...subject, quizzes: [...quizzes, quiz] });
+    Alert.alert("Quiz criado", `${quiz.questions.length} pergunta(s) foram geradas a partir das descrições dos conteúdos.`);
+  }
+
+  function handleFinishQuiz(quiz: SubjectQuiz, correctAnswers: number) {
+    const lastScore = quiz.questions.length
+      ? Math.round((correctAnswers / quiz.questions.length) * 100)
+      : 0;
+
+    updateSubject({
+      ...subject,
+      quizzes: quizzes.map((item) => item.id === quiz.id
+        ? { ...item, lastScore, lastAttemptedAt: new Date().toISOString() }
+        : item),
+    });
+  }
+
   function confirmRemoval(message: string, onConfirm: () => void) {
     if (Platform.OS === "web") {
       if (window.confirm(message)) onConfirm();
@@ -267,6 +368,18 @@ export default function SubjectDetailsScreen() {
         materials: materials.filter((item) => item.id !== material.id),
       });
       deleteLocalMaterial(material.uri);
+    });
+  }
+
+  function handleDeleteFlashcard(flashcard: SubjectFlashcard) {
+    confirmRemoval("Excluir este flashcard?", () => {
+      updateSubject({ ...subject, flashcards: flashcards.filter((item) => item.id !== flashcard.id) });
+    });
+  }
+
+  function handleDeleteQuiz(quiz: SubjectQuiz) {
+    confirmRemoval(`Excluir o quiz "${quiz.title}"?`, () => {
+      updateSubject({ ...subject, quizzes: quizzes.filter((item) => item.id !== quiz.id) });
     });
   }
 
@@ -381,6 +494,80 @@ export default function SubjectDetailsScreen() {
 
         <View style={styles.section}>
           <SectionHeader
+            title="Flashcards"
+            actionLabel="+ Manual"
+            onAction={() => setFlashcardCreateVisible(true)}
+          />
+          <Text style={styles.sectionHint}>O Mentalis pode criar perguntas de revisão e programar o próximo encontro com cada carta.</Text>
+          <View style={styles.materialActions}>
+            <ActionButton label="Gerar dos conteúdos" color="#5E35B1" onPress={handleGenerateFlashcards} />
+          </View>
+
+          {flashcards.length === 0 ? (
+            <Text style={styles.empty}>Nenhum flashcard criado ainda.</Text>
+          ) : (
+            <>
+              <Pressable onPress={() => setFlashcardPracticeVisible(true)} style={styles.flashcardPracticeButton}>
+                <Text style={styles.flashcardPracticeText}>
+                  {dueFlashcards.length > 0
+                    ? `Revisar agora (${dueFlashcards.length})`
+                    : `Revisar todos (${flashcards.length})`}
+                </Text>
+              </Pressable>
+              {flashcards.map((flashcard) => (
+                <View key={flashcard.id} style={styles.item}>
+                  <Text style={styles.itemText}>{flashcard.question}</Text>
+                  <Text style={styles.itemDate}>
+                    Revisado {flashcard.reviewCount} vez(es) • {formatNextReview(flashcard.nextReviewAt)}
+                  </Text>
+                  <View style={styles.actionsRow}>
+                    <ActionButton label="Excluir" color="#B00020" onPress={() => handleDeleteFlashcard(flashcard)} />
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader
+            title="Quizzes"
+            actionLabel="+ Manual"
+            onAction={() => setQuizCreateVisible(true)}
+          />
+          <Text style={styles.sectionHint}>Gere perguntas a partir das descrições dos conteúdos ou crie manualmente.</Text>
+          <View style={styles.materialActions}>
+            <ActionButton label="Gerar quiz dos conteúdos" color="#5E35B1" onPress={handleGenerateQuiz} />
+          </View>
+
+          {quizzes.length === 0 ? (
+            <Text style={styles.empty}>Nenhum quiz criado ainda.</Text>
+          ) : (
+            quizzes.map((quiz) => (
+              <View key={quiz.id} style={styles.item}>
+                <Text style={styles.itemText}>{quiz.title}</Text>
+                <Text style={styles.itemDate}>{quiz.questions.length} pergunta(s)</Text>
+                {quiz.lastScore !== undefined ? (
+                  <Text style={styles.quizScore}>Último resultado: {quiz.lastScore}%</Text>
+                ) : null}
+                <View style={styles.actionsRow}>
+                  <ActionButton
+                    label="Fazer quiz"
+                    color="#5E35B1"
+                    onPress={() => {
+                      setPlayingQuiz(quiz);
+                      setQuizPlayerVisible(true);
+                    }}
+                  />
+                  <ActionButton label="Excluir" color="#B00020" onPress={() => handleDeleteQuiz(quiz)} />
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader
             title="Datas importantes"
             actionLabel="+ Adicionar"
             onAction={() => {
@@ -476,6 +663,31 @@ export default function SubjectDetailsScreen() {
         onClose={() => setAudioVisible(false)}
         onRecorded={handleAudioRecorded}
       />
+      <AddFlashcardModal
+        visible={flashcardCreateVisible}
+        onClose={() => setFlashcardCreateVisible(false)}
+        onSave={handleSaveFlashcard}
+      />
+      <FlashcardPracticeModal
+        visible={flashcardPracticeVisible}
+        flashcards={dueFlashcards.length > 0 ? dueFlashcards : flashcards}
+        onClose={() => setFlashcardPracticeVisible(false)}
+        onReviewed={handleReviewedFlashcard}
+      />
+      <CreateQuizModal
+        visible={quizCreateVisible}
+        onClose={() => setQuizCreateVisible(false)}
+        onSave={handleSaveQuiz}
+      />
+      <QuizPlayerModal
+        visible={quizPlayerVisible}
+        quiz={playingQuiz}
+        onClose={() => {
+          setQuizPlayerVisible(false);
+          setPlayingQuiz(null);
+        }}
+        onFinish={handleFinishQuiz}
+      />
       <Modal
         visible={Boolean(previewMaterial)}
         transparent
@@ -542,6 +754,9 @@ const styles = {
   materialActions: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
   materialGroup: { marginTop: 18 },
   materialDate: { color: "#C5B5FF", fontWeight: "700", textTransform: "capitalize" },
+  flashcardPracticeButton: { backgroundColor: "#5E35B1", padding: 13, borderRadius: 10, marginTop: 13 },
+  flashcardPracticeText: { color: "white", textAlign: "center", fontWeight: "700" },
+  quizScore: { color: "#00E676", marginTop: 7, fontWeight: "700", fontSize: 12 },
   actionButton: { paddingVertical: 9, paddingHorizontal: 11, borderRadius: 9, marginRight: 8, marginBottom: 6 },
   actionButtonText: { color: "white", fontWeight: "700", fontSize: 12 },
   previewOverlay: { flex: 1, backgroundColor: "#080810", padding: 20 },

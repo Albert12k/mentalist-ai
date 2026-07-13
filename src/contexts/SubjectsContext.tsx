@@ -29,6 +29,8 @@ function normalizeSubject(subject: Subject): Subject {
     ...subject,
     contents: subject.contents ?? [],
     materials: subject.materials ?? [],
+    flashcards: subject.flashcards ?? [],
+    quizzes: subject.quizzes ?? [],
     events: subject.events ?? [],
     notes: subject.notes ?? "",
     studyHistory: subject.studyHistory ?? [],

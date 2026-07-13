@@ -239,6 +239,45 @@ export type SubjectMaterial = {
   postedAt: string;
 };
 
+// ============================================
+// 🧠 FLASHCARDS E QUIZZES
+// ============================================
+//
+// Esses recursos pertencem à matéria para que perguntas e revisões não se
+// misturem entre assuntos diferentes.
+
+export type SubjectFlashcard = {
+  id: string;
+  question: string;
+  answer: string;
+  createdAt: string;
+  reviewCount: number;
+  lastReviewedAt?: string;
+  nextReviewAt?: string;
+
+  // Preenchido quando a carta foi criada automaticamente a partir de um conteúdo.
+  sourceContentId?: string;
+};
+
+export type SubjectQuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  correctOptionIndex: number;
+};
+
+export type SubjectQuiz = {
+  id: string;
+  title: string;
+  questions: SubjectQuizQuestion[];
+  createdAt: string;
+  lastScore?: number;
+  lastAttemptedAt?: string;
+
+  // Guarda a origem para diferenciar um quiz gerado de um quiz criado manualmente.
+  sourceContentIds?: string[];
+};
+
 
 
 
@@ -339,6 +378,10 @@ image?: string;
 
   // Arquivos e gravações organizados dentro desta matéria.
   materials: SubjectMaterial[];
+
+  // Perguntas curtas para revisão ativa e quizzes de múltipla escolha.
+  flashcards: SubjectFlashcard[];
+  quizzes: SubjectQuiz[];
 
 
 
