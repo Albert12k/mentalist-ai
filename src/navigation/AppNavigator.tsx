@@ -4,14 +4,20 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeScreen from "../screens/HomeScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 import ProgressScreen from "../screens/ProgressScreen";
 import SubjectDetailsScreen from "../screens/SubjectDetailsScreen";
 import SubjectsScreen from "../screens/SubjectsScreen";
+import TrainingScreen from "../screens/TrainingScreen";
 
 export type RootStackParamList = {
   MainTabs: undefined;
   SubjectDetails: {
     subject: any;
+  };
+  Training: {
+    mode: "manual" | "guided" | "auto";
+    subjectIds: string[];
   };
 };
 
@@ -53,10 +59,7 @@ function MainTabs() {
         children={() => <Placeholder title="Desafios" />}
       />
       <Tab.Screen name="Progresso" component={ProgressScreen} />
-      <Tab.Screen
-        name="Perfil"
-        children={() => <Placeholder title="Perfil" />}
-      />
+      <Tab.Screen name="Perfil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -67,6 +70,7 @@ export default function AppNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="SubjectDetails" component={SubjectDetailsScreen} />
+        <Stack.Screen name="Training" component={TrainingScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
