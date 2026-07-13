@@ -2,6 +2,7 @@ import { SafeAreaView, ScrollView, Text, View } from "react-native";
 
 import ProgressBar from "../components/ProgressBar";
 import { useSubjects } from "../contexts/SubjectsContext";
+import { useProfile } from "../contexts/ProfileContext";
 import { Subject } from "../types/Subject";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 
@@ -21,7 +22,8 @@ function getSubjectStats(subject: Subject): SubjectStats {
 
 export default function ProgressScreen() {
   const { subjects } = useSubjects();
-  const totalXP = getTotalXP(subjects);
+  const { profile } = useProfile();
+  const totalXP = getTotalXP(subjects, profile.bonusXP);
   const levelProgress = getLevelProgress(totalXP);
   const totalSessions = subjects.reduce((total, subject) => total + subject.studyHistory.length, 0);
   const totalMinutes = subjects.reduce(

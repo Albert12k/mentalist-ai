@@ -24,8 +24,8 @@ export function calculateStudyXP(
   );
 }
 
-export function getTotalXP(subjects: Subject[]): number {
-  return subjects.reduce(
+export function getTotalXP(subjects: Subject[], bonusXP: number = 0): number {
+  const studyXP = subjects.reduce(
     (total, subject) =>
       total + subject.studyHistory.reduce(
         (subjectXP, session: StudyHistory) => subjectXP + session.xpEarned,
@@ -33,6 +33,8 @@ export function getTotalXP(subjects: Subject[]): number {
       ),
     0,
   );
+
+  return studyXP + Math.max(bonusXP, 0);
 }
 
 export function getLevelProgress(totalXP: number): LevelProgress {

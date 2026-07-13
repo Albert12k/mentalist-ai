@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import ProgressBar from "../components/ProgressBar";
 import XPBar from "../components/XPBar";
 import { useSubjects } from "../contexts/SubjectsContext";
+import { useProfile } from "../contexts/ProfileContext";
 import { getStudyByMode, generateStudyPlan, StudyRecommendation } from "../services/studyPlanner";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 import { colors } from "../theme/colors";
@@ -29,10 +30,11 @@ const modeInformation: Record<StudyMode, { title: string; description: string }>
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { subjects } = useSubjects();
+  const { profile } = useProfile();
   const [studyMode, setStudyMode] = useState<StudyMode | null>(null);
   const plan = generateStudyPlan(subjects);
   const recommendations = getStudyByMode(plan, studyMode);
-  const totalXP = getTotalXP(subjects);
+  const totalXP = getTotalXP(subjects, profile.bonusXP);
   const levelProgress = getLevelProgress(totalXP);
   const averageRetention = subjects.length === 0
     ? 0

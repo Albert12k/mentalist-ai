@@ -13,6 +13,10 @@ export async function getProfile(): Promise<UserProfile> {
     return {
       name: savedProfile.name?.trim() || defaultUserProfile.name,
       weeklyGoalMinutes: Math.max(30, Math.min(savedProfile.weeklyGoalMinutes ?? defaultUserProfile.weeklyGoalMinutes, 2_400)),
+      bonusXP: Math.max(0, savedProfile.bonusXP ?? 0),
+      claimedChallengeIds: Array.isArray(savedProfile.claimedChallengeIds)
+        ? savedProfile.claimedChallengeIds.filter((id): id is string => typeof id === "string")
+        : [],
     };
   } catch (error) {
     console.log("Erro ao carregar perfil:", error);

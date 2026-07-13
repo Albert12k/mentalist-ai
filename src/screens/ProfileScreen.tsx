@@ -63,7 +63,7 @@ export default function ProfileScreen() {
   }, 0);
   const weeklyProgress = Math.min(Math.round((weeklyMinutes / profile.weeklyGoalMinutes) * 100), 100);
   const streak = calculateStreak(studySessions.map((session) => new Date(session.date)));
-  const totalXP = getTotalXP(subjects);
+  const totalXP = getTotalXP(subjects, profile.bonusXP);
 
   function openEditor() {
     setNameInput(profile.name);
@@ -84,7 +84,8 @@ export default function ProfileScreen() {
       return;
     }
 
-    updateProfile({ name: nameInput.trim(), weeklyGoalMinutes });
+    // Mantemos os bônus e desafios já salvos ao editar somente nome/meta.
+    updateProfile({ ...profile, name: nameInput.trim(), weeklyGoalMinutes });
     setEditing(false);
   }
 
