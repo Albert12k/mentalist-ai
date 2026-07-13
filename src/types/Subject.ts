@@ -208,6 +208,37 @@ export type StudyHistory = {
 
 };
 
+// ============================================
+// 📎 MATERIAIS DA MATÉRIA
+// ============================================
+//
+// Um material é um arquivo que o estudante adiciona à matéria: PDF da aula,
+// foto de uma anotação ou áudio gravado. A categoria é sugerida pelo app e
+// pode ser ajustada antes de salvar.
+
+export type SubjectMaterialType = "pdf" | "image" | "audio";
+
+export type SubjectMaterialCategory =
+  | "lesson"
+  | "notes"
+  | "review"
+  | "exercise"
+  | "other";
+
+export type SubjectMaterial = {
+  id: string;
+  title: string;
+  type: SubjectMaterialType;
+  category: SubjectMaterialCategory;
+  uri: string;
+  mimeType?: string;
+  size?: number;
+  durationMillis?: number;
+
+  // Data em que o arquivo foi incluído. Ela organiza a biblioteca da matéria.
+  postedAt: string;
+};
+
 
 
 
@@ -305,6 +336,9 @@ image?: string;
   // =========================
 
   contents: SubjectContent[];
+
+  // Arquivos e gravações organizados dentro desta matéria.
+  materials: SubjectMaterial[];
 
 
 

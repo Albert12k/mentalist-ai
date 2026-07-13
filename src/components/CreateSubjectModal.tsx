@@ -85,6 +85,7 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
       retention: 0,
       absences: 0,
       contents: [],
+      materials: [],
       events: [],
       notes: "",
       studyHistory: [],

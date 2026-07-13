@@ -20,6 +20,23 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que o Mentalis acesse suas fotos para anexar anotações.",
+          "cameraPermission": "Permitir que o Mentalis use a câmera para registrar anotações."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permitir que o Mentalis grave áudios de aula.",
+          "recordAudioAndroid": true,
+          "enableBackgroundRecording": false
+        }
+      ]
+    ]
   }
 }

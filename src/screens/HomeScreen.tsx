@@ -116,6 +116,16 @@ export default function HomeScreen() {
           <ProgressBar value={averageRetention} color={colors.success} />
           <Text style={styles.retentionText}>Retenção geral: {averageRetention}%</Text>
         </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Precisa de uma orientação?</Text>
+          <Text style={styles.muted}>
+            Pergunte sobre prioridades, prazos, progresso ou técnicas de revisão.
+          </Text>
+          <Pressable onPress={() => navigation.navigate("Tutor")} style={styles.tutorButton}>
+            <Text style={styles.tutorButtonText}>Abrir tutor de estudo</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -161,4 +171,6 @@ const styles = {
   startButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 12, marginTop: 16 },
   startButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   retentionText: { color: colors.success, marginTop: 8, fontWeight: "700" },
+  tutorButton: { backgroundColor: "#263238", padding: 13, borderRadius: 12, marginTop: 14 },
+  tutorButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
 } as const;

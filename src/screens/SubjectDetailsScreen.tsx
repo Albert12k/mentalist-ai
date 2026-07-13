@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
   Alert,
+  Image,
+  Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -9,14 +11,27 @@ import {
   View,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 
 import AddContentModal from "../components/AddContentModal";
 import AddEventModal from "../components/AddEventModal";
+import AudioRecorderModal from "../components/AudioRecorderModal";
 import EditNotesModal from "../components/EditNotesModal";
+import MaterialCard from "../components/MaterialCard";
+import MaterialImportModal from "../components/MaterialImportModal";
 import StudySessionModal from "../components/StudySessionModal";
 import { useSubjects } from "../contexts/SubjectsContext";
+import {
+  deleteLocalMaterial,
+  formatMaterialDate,
+  groupMaterialsByDate,
+  MaterialDraft,
+  persistImportedMaterial,
+  suggestMaterialCategory,
+} from "../services/materials";
 import { recordStudySession } from "../services/studySession";
-import { Subject, SubjectContent, SubjectEvent } from "../types/Subject";
+import { Subject, SubjectContent, SubjectEvent, SubjectMaterial } from "../types/Subject";
 
 type StudySessionInput = {
   durationMinutes: number;
@@ -43,10 +58,15 @@ export default function SubjectDetailsScreen() {
   const [eventVisible, setEventVisible] = useState(false);
   const [notesVisible, setNotesVisible] = useState(false);
   const [studySessionVisible, setStudySessionVisible] = useState(false);
+  const [materialVisible, setMaterialVisible] = useState(false);
+  const [audioVisible, setAudioVisible] = useState(false);
   const [editingContent, setEditingContent] = useState<SubjectContent | null>(null);
   const [editingEvent, setEditingEvent] = useState<SubjectEvent | null>(null);
+  const [materialDraft, setMaterialDraft] = useState<MaterialDraft | null>(null);
+  const [previewMaterial, setPreviewMaterial] = useState<SubjectMaterial | null>(null);
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
+  const materials = subject.materials ?? [];
 
   function closeContentModal() {
     setContentVisible(false);
@@ -112,6 +132,104 @@ export default function SubjectDetailsScreen() {
     setNotesVisible(false);
   }
 
+  function removeExtension(fileName: string): string {
+    return fileName.replace(/\.[^/.]+$/, "");
+  }
+
+  // PDF: usamos o seletor do sistema, limitado a arquivos PDF. Em celulares,
+  // o arquivo é copiado para a pasta persistente do aplicativo antes de salvar.
+  async function handlePickPdf() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        multiple: false,
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      const uri = await persistImportedMaterial(file.uri, file.name);
+
+      setMaterialDraft({
+        title: removeExtension(file.name),
+        type: "pdf",
+        category: suggestMaterialCategory("pdf", file.name),
+        uri,
+        mimeType: file.mimeType ?? "application/pdf",
+        size: file.size,
+      });
+      setMaterialVisible(true);
+    } catch {
+      Alert.alert("Não foi possível importar", "Escolha outro PDF e tente novamente.");
+    }
+  }
+
+  // Foto: a pessoa escolhe uma imagem já existente (como uma anotação de
+  // caderno). A categoria sugerida é Anotação, mas pode ser alterada depois.
+  async function handlePickImage() {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Fotos necessárias", "Permita o acesso às fotos para anexar uma anotação.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (result.canceled) return;
+
+      const image = result.assets[0];
+      const fileName = image.fileName ?? `anotacao-${Date.now()}.jpg`;
+      const uri = await persistImportedMaterial(image.uri, fileName);
+
+      setMaterialDraft({
+        title: removeExtension(fileName),
+        type: "image",
+        category: suggestMaterialCategory("image", fileName),
+        uri,
+        mimeType: image.mimeType ?? "image/jpeg",
+        size: image.fileSize,
+      });
+      setMaterialVisible(true);
+    } catch {
+      Alert.alert("Não foi possível importar", "Escolha outra foto e tente novamente.");
+    }
+  }
+
+  function handleAudioRecorded(draft: MaterialDraft) {
+    setAudioVisible(false);
+    setMaterialDraft(draft);
+    setMaterialVisible(true);
+  }
+
+  function discardMaterialDraft() {
+    if (materialDraft) deleteLocalMaterial(materialDraft.uri);
+    setMaterialVisible(false);
+    setMaterialDraft(null);
+  }
+
+  function handleSaveMaterial(draft: MaterialDraft) {
+    updateSubject({
+      ...subject,
+      materials: [
+        ...materials,
+        {
+          ...draft,
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          postedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    setMaterialVisible(false);
+    setMaterialDraft(null);
+  }
+
   function confirmRemoval(message: string, onConfirm: () => void) {
     if (Platform.OS === "web") {
       if (window.confirm(message)) onConfirm();
@@ -139,6 +257,16 @@ export default function SubjectDetailsScreen() {
         ...subject,
         events: subject.events.filter((item) => item.id !== event.id),
       });
+    });
+  }
+
+  function handleDeleteMaterial(material: SubjectMaterial) {
+    confirmRemoval(`Excluir o material "${material.title}"?`, () => {
+      updateSubject({
+        ...subject,
+        materials: materials.filter((item) => item.id !== material.id),
+      });
+      deleteLocalMaterial(material.uri);
     });
   }
 
@@ -215,6 +343,37 @@ export default function SubjectDetailsScreen() {
                   />
                   <ActionButton label="Excluir" color="#B00020" onPress={() => handleDeleteContent(content)} />
                 </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Materiais da matéria</Text>
+          <Text style={styles.sectionHint}>
+            PDFs, fotos de anotações e áudios ficam classificados e separados pela data de postagem.
+          </Text>
+
+          <View style={styles.materialActions}>
+            <ActionButton label="+ PDF da aula" color="#263238" onPress={handlePickPdf} />
+            <ActionButton label="+ Foto da anotação" color="#263238" onPress={handlePickImage} />
+            <ActionButton label="Gravar áudio" color="#B00020" onPress={() => setAudioVisible(true)} />
+          </View>
+
+          {materials.length === 0 ? (
+            <Text style={styles.empty}>Nenhum material adicionado ainda.</Text>
+          ) : (
+            groupMaterialsByDate(materials).map((group) => (
+              <View key={group.date} style={styles.materialGroup}>
+                <Text style={styles.materialDate}>{formatMaterialDate(group.date)}</Text>
+                {group.materials.map((material) => (
+                  <MaterialCard
+                    key={material.id}
+                    material={material}
+                    onDelete={() => handleDeleteMaterial(material)}
+                    onPreviewImage={setPreviewMaterial}
+                  />
+                ))}
               </View>
             ))
           )}
@@ -306,6 +465,32 @@ export default function SubjectDetailsScreen() {
         onClose={() => setStudySessionVisible(false)}
         onSave={handleSaveStudy}
       />
+      <MaterialImportModal
+        visible={materialVisible}
+        draft={materialDraft}
+        onClose={discardMaterialDraft}
+        onSave={handleSaveMaterial}
+      />
+      <AudioRecorderModal
+        visible={audioVisible}
+        onClose={() => setAudioVisible(false)}
+        onRecorded={handleAudioRecorded}
+      />
+      <Modal
+        visible={Boolean(previewMaterial)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewMaterial(null)}
+      >
+        <SafeAreaView style={styles.previewOverlay}>
+          <Pressable onPress={() => setPreviewMaterial(null)} style={styles.previewCloseButton}>
+            <Text style={styles.previewCloseText}>Fechar</Text>
+          </Pressable>
+          {previewMaterial ? (
+            <Image source={{ uri: previewMaterial.uri }} style={styles.fullImage} resizeMode="contain" />
+          ) : null}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -343,6 +528,7 @@ const styles = {
   studyButton: { backgroundColor: "#7C4DFF", padding: 15, borderRadius: 12, marginTop: 20 },
   studyButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   section: { marginTop: 25 },
+  sectionHint: { color: "#888", marginTop: 7, lineHeight: 19 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   link: { color: "#7C4DFF", fontWeight: "700" },
   empty: { color: "#777", marginTop: 10 },
@@ -353,6 +539,13 @@ const styles = {
   completedText: { color: "#00E676" },
   itemDate: { color: "#888", marginTop: 4 },
   actionsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
+  materialActions: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
+  materialGroup: { marginTop: 18 },
+  materialDate: { color: "#C5B5FF", fontWeight: "700", textTransform: "capitalize" },
   actionButton: { paddingVertical: 9, paddingHorizontal: 11, borderRadius: 9, marginRight: 8, marginBottom: 6 },
   actionButtonText: { color: "white", fontWeight: "700", fontSize: 12 },
+  previewOverlay: { flex: 1, backgroundColor: "#080810", padding: 20 },
+  previewCloseButton: { alignSelf: "flex-end", padding: 12, marginBottom: 10 },
+  previewCloseText: { color: "#C5B5FF", fontWeight: "700" },
+  fullImage: { flex: 1, width: "100%" },
 } as const;
