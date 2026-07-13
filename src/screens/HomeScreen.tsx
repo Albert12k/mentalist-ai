@@ -8,6 +8,8 @@ import {
 
 import { useState } from "react";
 
+import { useNavigation } from "@react-navigation/native";
+
 
 // =========================
 // 🔥 COMPONENTES
@@ -43,12 +45,19 @@ import {
   getStudyByMode,
 } from "../services/studyPlanner";
 
+import {
+  getLevelProgress,
+  getTotalXP,
+} from "../services/xpSystem";
+
 
 
 
 
 
 export default function HomeScreen(){
+
+  const navigation = useNavigation<any>();
 
 
 
@@ -125,6 +134,11 @@ export default function HomeScreen(){
         subjects.length
 
       );
+
+  const levelProgress =
+    getLevelProgress(
+      getTotalXP(subjects)
+    );
 
 
 
@@ -493,11 +507,13 @@ backgroundColor:colors.background,
           .map((item)=>(
 
 
-            <View
+            <Pressable
 
               key={
                 item.subject.id
               }
+
+              onPress={() => navigation.navigate("SubjectDetails", { subject: item.subject })}
 
 
               style={{
@@ -581,7 +597,7 @@ backgroundColor:colors.background,
 
 
 
-            </View>
+            </Pressable>
 
 
           ))
@@ -615,9 +631,9 @@ backgroundColor:colors.background,
 
         <XPBar
 
-          level={1}
+          level={levelProgress.level}
 
-          xp={0}
+          xp={levelProgress.progressPercent}
 
         />
 

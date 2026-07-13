@@ -6,15 +6,32 @@
 
 import { Subject } from "../types/Subject";
 
-export function updateRetention(subject: Subject): Subject {
-  const increase = Math.random() * 5; // ganho aleatório
+/**
+ * Calcula o ganho de retenção de forma previsível.
+ *
+ * O ganho diminui perto de 100%, evitando que poucas sessões coloquem uma
+ * matéria no máximo. Não usamos aleatoriedade: o usuário deve conseguir
+ * entender por que o progresso exibido mudou.
+ */
+export function calculateRetentionAfterStudy(
+  currentRetention: number,
+  durationMinutes: number,
+): number {
+  const safeRetention = Math.min(Math.max(currentRetention, 0), 100);
+  const safeDuration = Math.min(Math.max(durationMinutes, 1), 180);
+  const baseGain = Math.min(8, 1 + safeDuration / 15);
+  const diminishingFactor = 1 - safeRetention / 140;
+  const nextRetention = safeRetention + baseGain * diminishingFactor;
 
-  let newRetention = subject.retention + increase;
+  return Number(Math.min(nextRetention, 100).toFixed(1));
+}
 
-  if (newRetention > 100) newRetention = 100;
-
+export function updateRetention(
+  subject: Subject,
+  durationMinutes: number = 30,
+): Subject {
   return {
     ...subject,
-    retention: Number(newRetention.toFixed(1)),
+    retention: calculateRetentionAfterStudy(subject.retention, durationMinutes),
   };
 }

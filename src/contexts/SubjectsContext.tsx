@@ -24,6 +24,17 @@ import {
   saveSubjects,
 } from "../services/subjectsStorage";
 
+function normalizeSubject(subject: Subject): Subject {
+  return {
+    ...subject,
+    contents: subject.contents ?? [],
+    events: subject.events ?? [],
+    notes: subject.notes ?? "",
+    studyHistory: subject.studyHistory ?? [],
+    absences: subject.absences ?? 0,
+  };
+}
+
 
 
 // =========================
@@ -131,7 +142,7 @@ export function SubjectsProvider(
         await getSubjects();
 
 
-      setSubjects(saved);
+      setSubjects(saved.map(normalizeSubject));
 
 
     }

@@ -200,6 +200,11 @@ export type StudyHistory = {
 
   xpEarned: number;
 
+  // Conteúdo estudado na sessão, quando o usuário o seleciona.
+  // Mantemos este campo opcional para continuar aceitando os dados já salvos
+  // em versões anteriores do aplicativo.
+  contentId?: string;
+
 
 };
 
@@ -284,6 +289,9 @@ image?: string;
    */
 
   retention: number;
+
+  // Quantidade de faltas registradas pelo estudante nesta matéria.
+  absences: number;
 
 
 

@@ -1,873 +1,200 @@
+import { useState } from "react";
 import {
-  useState
-} from "react";
-
-
-import {
-  SafeAreaView,
-  Text,
-  View,
-  Pressable,
-  ScrollView,
   Alert,
   Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
+import CreateSubjectModal from "../components/CreateSubjectModal";
+import EditSubjectModal from "../components/EditSubjectModal";
+import { useSubjects } from "../contexts/SubjectsContext";
+import { Subject } from "../types/Subject";
 
+export default function SubjectsScreen() {
+  const navigation = useNavigation<any>();
+  const { subjects, addSubject, updateSubject, removeSubject } = useSubjects();
+  const [createVisible, setCreateVisible] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-// 🧭 NAVEGAÇÃO
-
-import {
-  useNavigation
-} from "@react-navigation/native";
-
-
-
-// 🎨 TIPOS
-
-import {
-  Subject
-} from "../types/Subject";
-
-
-
-// 🧠 CONTEXT
-
-import {
-  useSubjects
-} from "../contexts/SubjectsContext";
-
-
-
-// 🧩 COMPONENTES
-
-import CreateSubjectModal
-from "../components/CreateSubjectModal";
-
-
-import EditSubjectModal
-from "../components/EditSubjectModal";
-
-
-
-
-
-
-
-
-export default function SubjectsScreen(){
-
-
-  const navigation =
-    useNavigation<any>();
-
-
-
-  
-const {
-
-  subjects,
-
-  addSubject,
-
-  updateSubjects,
-
-  updateSubject,
-
-  removeSubject,
-
-} = useSubjects();
-
-
-  // =========================
-  // MODAIS
-  // =========================
-
-
-  const [
-    createVisible,
-    setCreateVisible
-  ] = useState(false);
-
-
-
-  const [
-    editVisible,
-    setEditVisible
-  ] = useState(false);
-
-
-
-
-  const [
-    selectedSubject,
-    setSelectedSubject
-  ] = useState<Subject | null>(null);
-
-
-
-
-
-
-
-
-
-
-
-  // =========================
-  // CRIAR MATÉRIA
-  // =========================
-
-
-  function handleCreate(
-    subject:Subject
-  ){
-
-    addSubject(subject);
-
+  function openDetails(subject: Subject) {
+    navigation.navigate("SubjectDetails", { subject });
   }
 
-
-
-
-
-
-
-
-
-  // =========================
-  // ESTUDAR + XP
-  // =========================
-  // 🔧 CORRIGIDO: antes essa função montava um array
-  // inteiro (updated) com .map(), mas tentava salvar
-  // chamando updateSubject(updatedSubject) — variável
-  // que não existia (typo).
-  //
-  // Agora: acha a matéria pelo id, monta só o objeto
-  // atualizado, e chama updateSubject passando UMA
-  // matéria (igual já é feito em handleSaveEdit).
-
-
-  function handleStudy(
-    id:string
-  ){
-
-
-    const subject = subjects.find(
-      (s)=> s.id === id
-    );
-
-
-    if(!subject) return;
-
-
-    const subjectAtualizada:Subject = {
-
+  function handleRegisterAbsence(subject: Subject) {
+    updateSubject({
       ...subject,
-
-      retention:
-        Math.min(
-          subject.retention + 5,
-          100
-        )
-
-    };
-
-
-    updateSubject(subjectAtualizada);
-
-
+      absences: subject.absences + 1,
+    });
   }
 
-
-
-
-
-
-
-
-
-  // =========================
-  // ABRIR EDIÇÃO
-  // =========================
-
-
-  function handleEdit(
-    subject:Subject
-  ){
-
-
-    setSelectedSubject(subject);
-
-    setEditVisible(true);
-
-
+  function handleSaveEdit(subject: Subject) {
+    updateSubject(subject);
+    setSelectedSubject(null);
   }
 
+  function handleDelete(subject: Subject) {
+    const remove = () => removeSubject(subject.id);
 
-
-
-
-
-
-
-
-  // =========================
-  // SALVAR EDIÇÃO
-  // =========================
-
-
- function handleSaveEdit(
-  subjectUpdated: Subject
-){
-
-  updateSubject(subjectUpdated);
-
-
-  setEditVisible(false);
-
-  setSelectedSubject(null);
-
-}
-  // =========================
-  // EXCLUIR
-  // =========================
-
-
- function handleDelete(
-  id:string,
-  name:string
-){
-
-  // 🌐 No navegador (react-native-web), o Alert.alert
-  // com múltiplos botões (Cancelar/Excluir) não é
-  // implementado — nada aparece na tela, e o onPress
-  // do botão "Excluir" nunca roda. Por isso o delete
-  // "não fazia nada" só no npx expo start --web.
-  //
-  // Solução: usar window.confirm como alternativa
-  // quando a plataforma for web.
-
-  if(Platform.OS === "web"){
-
-    const confirmado = window.confirm(
-      `Deseja remover ${name}?`
-    );
-
-    if(confirmado){
-
-      removeSubject(id);
-
+    if (Platform.OS === "web") {
+      if (window.confirm(`Deseja remover ${subject.name}?`)) remove();
+      return;
     }
 
-    return;
-
+    Alert.alert("Excluir matéria", `Deseja remover ${subject.name}?`, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: remove },
+    ]);
   }
-
-
-  // 📱 No celular (iOS/Android) o Alert.alert nativo
-  // funciona normalmente.
-
-  Alert.alert(
-
-    "Excluir matéria",
-
-    `Deseja remover ${name}?`,
-
-    [
-
-      {
-        text:"Cancelar",
-        style:"cancel"
-      },
-
-
-      {
-
-        text:"Excluir",
-
-        style:"destructive",
-
-        onPress:()=>{
-
-
-          removeSubject(id);
-
-
-        }
-
-      }
-
-    ]
-
-  );
-
-}
-  // =========================
-  // CARD DA MATÉRIA
-  // =========================
-
-
-  function renderSubject(
-    item:Subject
-  ){
-
-
-    return (
-
-
-      <View
-
-
-        key={item.id}
-
-
-        style={{
-
-
-          backgroundColor:"#161625",
-
-          padding:16,
-
-          borderRadius:15,
-
-          marginBottom:15,
-
-          borderLeftWidth:6,
-
-          borderLeftColor:item.color,
-
-
-        }}
-
-
-      >
-
-
-
-
-        <Pressable
-
-
-          onPress={()=>
-
-
-            navigation.navigate(
-
-              "SubjectDetails",
-
-              {
-                subject:item
-              }
-
-            )
-
-          }
-
-
-        >
-
-
-          <Text
-
-            style={{
-
-              color:"white",
-
-              fontSize:19,
-
-              fontWeight:"700",
-
-            }}
-
-          >
-
-            📘 {item.name}
-
-          </Text>
-
-
-
-
-          <Text
-
-            style={{
-
-              color:"#aaa",
-
-              marginTop:8,
-
-            }}
-
-          >
-
-            🧠 Retenção:
-            {" "}
-            {item.retention}%
-
-          </Text>
-
-
-
-
-          <Text
-
-            style={{
-
-              color:"#777",
-
-              marginTop:5,
-
-            }}
-
-          >
-
-            🎯 Dificuldade:
-            {" "}
-            {item.difficulty}
-
-          </Text>
-
-
-        </Pressable>
-
-
-
-
-
-
-
-        <View
-
-          style={{
-
-            flexDirection:"row",
-
-            marginTop:15,
-
-            gap:10,
-
-          }}
-
-        >
-
-
-
-
-
-          <Pressable
-
-
-            onPress={()=>handleStudy(item.id)}
-
-
-            style={{
-
-
-              backgroundColor:"#7C4DFF",
-
-              padding:10,
-
-              borderRadius:10,
-
-
-            }}
-
-
-          >
-
-
-            <Text
-
-              style={{
-
-                color:"white",
-
-                fontWeight:"700"
-
-              }}
-
-            >
-
-              ⚡ XP
-
-            </Text>
-
-
-          </Pressable>
-
-
-
-
-
-
-
-          <Pressable
-
-
-            onPress={()=>handleEdit(item)}
-
-
-            style={{
-
-
-              backgroundColor:"#263238",
-
-              padding:10,
-
-              borderRadius:10,
-
-
-            }}
-
-
-          >
-
-
-            <Text
-
-              style={{
-
-                color:"white"
-
-              }}
-
-            >
-
-              ✏️ Editar
-
-            </Text>
-
-
-          </Pressable>
-
-
-
-
-
-
-
-
-          <Pressable
-
-
-            onPress={()=>
-
-
-              handleDelete(
-
-                item.id,
-
-                item.name
-
-              )
-
-            }
-
-
-            style={{
-
-
-              backgroundColor:"#B00020",
-
-              padding:10,
-
-              borderRadius:10,
-
-
-            }}
-
-
-          >
-
-
-            <Text
-
-              style={{
-
-                color:"white"
-
-              }}
-
-            >
-
-              🗑️
-
-            </Text>
-
-
-          </Pressable>
-
-
-
-
-
-        </View>
-
-
-
-
-
-      </View>
-
-
-    );
-
-
-  }
-
-
-
-
-
-
-
-
-
-
-
-
 
   return (
-
-
-    <SafeAreaView
-
-
-      style={{
-
-
-        flex:1,
-
-        backgroundColor:"#080810",
-
-        padding:20
-
-
-      }}
-
-
-    >
-
-
-
-
-      <Text
-
-
-        style={{
-
-
-          color:"white",
-
-          fontSize:28,
-
-          fontWeight:"700",
-
-
-        }}
-
-
-      >
-
-        📚 Matérias
-
-      </Text>
-
-
-
-
-
-
-
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Matérias</Text>
+        <Text style={styles.subtitle}>Organize seus estudos e acompanhe suas faltas.</Text>
+      </View>
 
       <ScrollView
-
-
         showsVerticalScrollIndicator={false}
-
-
-        style={{
-
-          marginTop:20
-
-        }}
-
-
-        contentContainerStyle={{
-
-          paddingBottom:120
-
-        }}
-
-
+        contentContainerStyle={styles.listContent}
       >
-
-
-
-        {
-
-          subjects.length === 0 ? (
-
-
-            <Text
-
-              style={{
-
-                color:"#888"
-
-              }}
-
+        {subjects.length === 0 ? (
+          <Text style={styles.empty}>Nenhuma matéria criada ainda.</Text>
+        ) : (
+          subjects.map((subject) => (
+            <View
+              key={subject.id}
+              style={[styles.subjectCard, { borderLeftColor: subject.color }]}
             >
+              <Pressable onPress={() => openDetails(subject)}>
+                <Text style={styles.subjectName}>{subject.name}</Text>
+                <Text style={styles.detail}>Retenção: {subject.retention}%</Text>
+                <Text style={styles.detail}>Dificuldade: {subject.difficulty}</Text>
+                <Text style={styles.absenceCount}>Faltas registradas: {subject.absences}</Text>
+              </Pressable>
 
-              Nenhuma matéria criada ainda
-
-
-            </Text>
-
-
-          )
-
-
-          :
-
-
-          subjects.map(renderSubject)
-
-
-        }
-
-
-
+              <View style={styles.actions}>
+                <ActionButton label="Estudar" color="#7C4DFF" onPress={() => openDetails(subject)} />
+                <ActionButton label="Falta +1" color="#B35C00" onPress={() => handleRegisterAbsence(subject)} />
+                <ActionButton label="Editar" color="#263238" onPress={() => setSelectedSubject(subject)} />
+                <ActionButton label="Excluir" color="#B00020" onPress={() => handleDelete(subject)} />
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
-
-
-
-
-
-
-
-
-      <Pressable
-
-
-        onPress={()=>setCreateVisible(true)}
-
-
-        style={{
-
-
-          backgroundColor:"#7C4DFF",
-
-          padding:15,
-
-          borderRadius:12,
-
-
-        }}
-
-
-      >
-
-
-        <Text
-
-          style={{
-
-
-            color:"white",
-
-            textAlign:"center",
-
-            fontWeight:"700"
-
-
-          }}
-
-
-        >
-
-          + Nova Matéria
-
-
-        </Text>
-
-
+      <Pressable onPress={() => setCreateVisible(true)} style={styles.createButton}>
+        <Text style={styles.createButtonText}>+ Nova matéria</Text>
       </Pressable>
 
-
-
-
-
-
-
-
-
       <CreateSubjectModal
-
-
         visible={createVisible}
-
-
-        onClose={()=>setCreateVisible(false)}
-
-
-        onCreate={handleCreate}
-
-
+        onClose={() => setCreateVisible(false)}
+        onCreate={addSubject}
       />
 
-
-
-
-
-
-
-
-
-      {
-        selectedSubject && (
-
-
-          <EditSubjectModal
-
-
-            visible={editVisible}
-
-
-            subject={selectedSubject}
-
-
-            onClose={()=>{
-
-
-              setEditVisible(false);
-
-              setSelectedSubject(null);
-
-
-            }}
-
-
-            onSave={handleSaveEdit}
-
-
-          />
-
-
-        )
-
-      }
-
-
-
-
-
+      {selectedSubject && (
+        <EditSubjectModal
+          visible={true}
+          subject={selectedSubject}
+          onClose={() => setSelectedSubject(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </SafeAreaView>
-
-
   );
-
-
 }
+
+function ActionButton({
+  label,
+  color,
+  onPress,
+}: {
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.actionButton, { backgroundColor: color }]}>
+      <Text style={styles.actionButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = {
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#080810",
+    padding: 20,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  subtitle: {
+    color: "#888",
+    marginTop: 6,
+  },
+  listContent: {
+    paddingBottom: 120,
+  },
+  empty: {
+    color: "#888",
+  },
+  subjectCard: {
+    backgroundColor: "#161625",
+    padding: 16,
+    borderRadius: 15,
+    marginBottom: 15,
+    borderLeftWidth: 6,
+  },
+  subjectName: {
+    color: "white",
+    fontSize: 19,
+    fontWeight: "700",
+  },
+  detail: {
+    color: "#AAA",
+    marginTop: 7,
+  },
+  absenceCount: {
+    color: "#FFB74D",
+    marginTop: 7,
+    fontWeight: "600",
+  },
+  actions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 15,
+  },
+  actionButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  actionButtonText: {
+    color: "white",
+    fontWeight: "700",
+  },
+  createButton: {
+    backgroundColor: "#7C4DFF",
+    padding: 15,
+    borderRadius: 12,
+  },
+  createButtonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "700",
+  },
+} as const;

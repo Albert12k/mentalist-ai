@@ -33,6 +33,37 @@ export type StudyRecommendation = {
 
 };
 
+function getDaysSinceLastStudy(lastStudied?: string): number | null {
+  if (!lastStudied) return null;
+
+  const lastStudiedTime = new Date(lastStudied).getTime();
+  if (Number.isNaN(lastStudiedTime)) return null;
+
+  return Math.max(0, Math.floor((Date.now() - lastStudiedTime) / 86_400_000));
+}
+
+type UpcomingEvent = {
+  title: string;
+  daysUntil: number;
+};
+
+function getUpcomingEvent(subject: Subject): UpcomingEvent | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingEvents = subject.events
+    .map((event) => {
+      const eventDate = new Date(`${event.date}T12:00:00`);
+      const daysUntil = Math.round((eventDate.getTime() - today.getTime()) / 86_400_000);
+
+      return { title: event.title, daysUntil };
+    })
+    .filter((event) => !Number.isNaN(event.daysUntil) && event.daysUntil >= 0)
+    .sort((first, second) => first.daysUntil - second.daysUntil);
+
+  return upcomingEvents[0] ?? null;
+}
+
 
 
 
@@ -57,6 +88,30 @@ function calculatePriority(
 
   score +=
     (100 - subject.retention) * 0.5;
+
+  // Matérias que nunca foram estudadas ou ficaram esquecidas precisam voltar
+  // ao plano. Esse valor passa a refletir as sessões registradas no app.
+  const daysSinceLastStudy = getDaysSinceLastStudy(subject.lastStudied);
+
+  if (daysSinceLastStudy === null) {
+    score += 15;
+  } else {
+    score += Math.min(daysSinceLastStudy * 3, 20);
+  }
+
+  const upcomingEvent = getUpcomingEvent(subject);
+
+  if (upcomingEvent) {
+    if (upcomingEvent.daysUntil <= 1) {
+      score += 25;
+    } else if (upcomingEvent.daysUntil <= 3) {
+      score += 20;
+    } else if (upcomingEvent.daysUntil <= 7) {
+      score += 12;
+    } else if (upcomingEvent.daysUntil <= 14) {
+      score += 5;
+    }
+  }
 
 
 
@@ -197,7 +252,31 @@ export function generateStudyPlan(
       // 🔎 EXPLICAÇÃO DA IA
       // =========================
 
-      if(subject.retention < 40) {
+      const daysSinceLastStudy = getDaysSinceLastStudy(subject.lastStudied);
+      const upcomingEvent = getUpcomingEvent(subject);
+
+      if(upcomingEvent && upcomingEvent.daysUntil <= 3) {
+
+        reason =
+          `Prazo próximo: ${upcomingEvent.title}`;
+
+      }
+
+      else if(daysSinceLastStudy === null) {
+
+        reason =
+          "Você ainda não estudou esta matéria";
+
+      }
+
+      else if(daysSinceLastStudy >= 3) {
+
+        reason =
+          "Está há alguns dias sem revisão";
+
+      }
+
+      else if(subject.retention < 40) {
 
 
         reason =
@@ -290,7 +369,9 @@ export function getStudyByMode(
 
   if(mode === "manual") {
 
-    return [];
+    // No modo manual, mostramos todas as matérias para que a pessoa escolha
+    // livremente qual sessão deseja iniciar.
+    return plan;
 
   }
 
