@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import ChallengesScreen from "../screens/ChallengesScreen";
+import AgendaScreen from "../screens/AgendaScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ProgressScreen from "../screens/ProgressScreen";
@@ -41,6 +42,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Matérias" component={SubjectsScreen} />
+      <Tab.Screen name="Agenda" component={AgendaScreen} />
       <Tab.Screen name="Desafios" component={ChallengesScreen} />
       <Tab.Screen name="Progresso" component={ProgressScreen} />
       <Tab.Screen name="Perfil" component={ProfileScreen} />
