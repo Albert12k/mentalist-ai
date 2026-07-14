@@ -129,6 +129,10 @@ export type SubjectEvent = {
   // IDs das notificações locais, usados quando a data da atividade muda.
   notificationIds?: string[];
 
+  // Quando concluída, a atividade permanece no histórico da matéria, mas não
+  // aparece na agenda nem gera novos lembretes.
+  completed?: boolean;
+
 
   // 🆔 identificação
 

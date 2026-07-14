@@ -132,10 +132,11 @@ export default function SubjectDetailsScreen() {
   async function handleEventSubmit(event: SubjectEvent) {
     const existingEvent = subject.events.find((item) => item.id === event.id);
     let notificationIds: string[] = [];
+    const savedEvent = { ...event, completed: existingEvent?.completed ?? false };
 
     try {
       notificationIds = await scheduleActivityReminders(
-        event,
+        savedEvent,
         subject.name,
         existingEvent?.notificationIds,
       );
@@ -147,8 +148,8 @@ export default function SubjectDetailsScreen() {
     updateSubject({
       ...subject,
       events: existingEvent
-        ? subject.events.map((item) => item.id === event.id ? { ...event, notificationIds } : item)
-        : [...subject.events, { ...event, notificationIds }],
+        ? subject.events.map((item) => item.id === event.id ? { ...savedEvent, notificationIds } : item)
+        : [...subject.events, { ...savedEvent, notificationIds }],
     });
     closeEventModal();
   }
@@ -380,6 +381,35 @@ export default function SubjectDetailsScreen() {
     });
   }
 
+  async function handleToggleEventCompleted(event: SubjectEvent) {
+    const completed = !event.completed;
+
+    if (completed) {
+      updateSubject({
+        ...subject,
+        events: subject.events.map((item) => (
+          item.id === event.id ? { ...item, completed } : item
+        )),
+      });
+      void cancelActivityReminders(event.notificationIds);
+      return;
+    }
+
+    let notificationIds = event.notificationIds;
+    try {
+      notificationIds = await scheduleActivityReminders({ ...event, completed: false }, subject.name, event.notificationIds);
+    } catch {
+      Alert.alert("Atividade reaberta", "A atividade voltou para a agenda, mas não foi possível programar alertas agora.");
+    }
+
+    updateSubject({
+      ...subject,
+      events: subject.events.map((item) => (
+        item.id === event.id ? { ...item, completed: false, notificationIds } : item
+      )),
+    });
+  }
+
   function handleDeleteMaterial(material: SubjectMaterial) {
     confirmRemoval(`Excluir o material "${material.title}"?`, () => {
       updateSubject({
@@ -602,15 +632,22 @@ export default function SubjectDetailsScreen() {
               .slice()
               .sort((first, second) => first.date.localeCompare(second.date))
               .map((event) => (
-                <View key={event.id} style={styles.item}>
-                  <Text style={styles.itemText}>{event.title}</Text>
+                <View key={event.id} style={[styles.item, event.completed && styles.completedEvent]}>
+                  <Text style={[styles.itemText, event.completed && styles.completedText]}>{event.title}</Text>
                   <Text style={styles.itemDate}>
                     {eventTypeLabels[event.type]} • {formatEventDate(event.date)}
                   </Text>
-                  {event.type !== "review" ? (
+                  {event.completed ? (
+                    <Text style={styles.eventDone}>Concluída</Text>
+                  ) : event.type !== "review" ? (
                     <Text style={styles.reminderDetail}>Alertas: 5, 3, 2 e 1 dia antes</Text>
                   ) : null}
                   <View style={styles.actionsRow}>
+                    <ActionButton
+                      label={event.completed ? "Reabrir" : "Concluir"}
+                      color={event.completed ? "#5E35B1" : "#007D4A"}
+                      onPress={() => handleToggleEventCompleted(event)}
+                    />
                     <ActionButton
                       label="Editar"
                       color="#263238"
@@ -771,6 +808,8 @@ const styles = {
   itemDescription: { color: "#AAA", marginTop: 5 },
   itemStatus: { color: "#FFB74D", marginTop: 7, fontSize: 12, fontWeight: "700" },
   completedText: { color: "#00E676" },
+  completedEvent: { opacity: 0.72 },
+  eventDone: { color: "#00E676", marginTop: 7, fontSize: 12, fontWeight: "700" },
   itemDate: { color: "#888", marginTop: 4 },
   reminderDetail: { color: "#B9A8FF", marginTop: 6, fontSize: 12, fontWeight: "700" },
   actionsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },

@@ -15,7 +15,7 @@ let notificationDisplayConfigured = false;
 
 function isReminderEvent(event: SubjectEvent): boolean {
   // Atividades e provas têm prazo. Revisões usam o calendário de estudo.
-  return event.type === "assignment" || event.type === "exam";
+  return !event.completed && (event.type === "assignment" || event.type === "exam");
 }
 
 function eventDateAtNineAM(date: string): Date {

@@ -48,7 +48,7 @@ export default function AgendaScreen() {
 
   const events = useMemo<AgendaItem[]>(() => (
     subjects
-      .flatMap((subject) => subject.events.map((event) => ({
+      .flatMap((subject) => subject.events.filter((event) => !event.completed).map((event) => ({
         subject,
         event,
         daysUntil: getDaysUntil(event.date),
