@@ -41,6 +41,10 @@ import {
   getDueFlashcards,
   reviewFlashcard,
 } from "../services/flashcardReview";
+import {
+  cancelActivityReminders,
+  scheduleActivityReminders,
+} from "../services/activityReminders";
 import { recordStudySession } from "../services/studySession";
 import {
   Subject,
@@ -125,14 +129,26 @@ export default function SubjectDetailsScreen() {
     });
   }
 
-  function handleEventSubmit(event: SubjectEvent) {
-    const eventExists = subject.events.some((item) => item.id === event.id);
+  async function handleEventSubmit(event: SubjectEvent) {
+    const existingEvent = subject.events.find((item) => item.id === event.id);
+    let notificationIds: string[] = [];
+
+    try {
+      notificationIds = await scheduleActivityReminders(
+        event,
+        subject.name,
+        existingEvent?.notificationIds,
+      );
+    } catch {
+      // A data ainda é salva; a Home continua mostrando o lembrete.
+      Alert.alert("Atividade salva", "Não foi possível programar o alerta do dispositivo agora.");
+    }
 
     updateSubject({
       ...subject,
-      events: eventExists
-        ? subject.events.map((item) => item.id === event.id ? event : item)
-        : [...subject.events, event],
+      events: existingEvent
+        ? subject.events.map((item) => item.id === event.id ? { ...event, notificationIds } : item)
+        : [...subject.events, { ...event, notificationIds }],
     });
     closeEventModal();
   }
@@ -175,13 +191,14 @@ export default function SubjectDetailsScreen() {
       if (result.canceled) return;
 
       const file = result.assets[0];
-      const uri = await persistImportedMaterial(file.uri, file.name);
+      const storedFile = await persistImportedMaterial(file.uri, file.name);
 
       setMaterialDraft({
         title: removeExtension(file.name),
         type: "pdf",
         category: suggestMaterialCategory("pdf", file.name),
-        uri,
+        uri: storedFile.uri,
+        webStorageKey: storedFile.webStorageKey,
         mimeType: file.mimeType ?? "application/pdf",
         size: file.size,
       });
@@ -212,13 +229,14 @@ export default function SubjectDetailsScreen() {
 
       const image = result.assets[0];
       const fileName = image.fileName ?? `anotacao-${Date.now()}.jpg`;
-      const uri = await persistImportedMaterial(image.uri, fileName);
+      const storedFile = await persistImportedMaterial(image.uri, fileName);
 
       setMaterialDraft({
         title: removeExtension(fileName),
         type: "image",
         category: suggestMaterialCategory("image", fileName),
-        uri,
+        uri: storedFile.uri,
+        webStorageKey: storedFile.webStorageKey,
         mimeType: image.mimeType ?? "image/jpeg",
         size: image.fileSize,
       });
@@ -235,7 +253,7 @@ export default function SubjectDetailsScreen() {
   }
 
   function discardMaterialDraft() {
-    if (materialDraft) deleteLocalMaterial(materialDraft.uri);
+    if (materialDraft) void deleteLocalMaterial(materialDraft.uri, materialDraft.webStorageKey);
     setMaterialVisible(false);
     setMaterialDraft(null);
   }
@@ -358,6 +376,7 @@ export default function SubjectDetailsScreen() {
         ...subject,
         events: subject.events.filter((item) => item.id !== event.id),
       });
+      void cancelActivityReminders(event.notificationIds);
     });
   }
 
@@ -367,7 +386,7 @@ export default function SubjectDetailsScreen() {
         ...subject,
         materials: materials.filter((item) => item.id !== material.id),
       });
-      deleteLocalMaterial(material.uri);
+      void deleteLocalMaterial(material.uri, material.webStorageKey);
     });
   }
 
@@ -588,6 +607,9 @@ export default function SubjectDetailsScreen() {
                   <Text style={styles.itemDate}>
                     {eventTypeLabels[event.type]} • {formatEventDate(event.date)}
                   </Text>
+                  {event.type !== "review" ? (
+                    <Text style={styles.reminderDetail}>Alertas: 5, 3, 2 e 1 dia antes</Text>
+                  ) : null}
                   <View style={styles.actionsRow}>
                     <ActionButton
                       label="Editar"
@@ -750,6 +772,7 @@ const styles = {
   itemStatus: { color: "#FFB74D", marginTop: 7, fontSize: 12, fontWeight: "700" },
   completedText: { color: "#00E676" },
   itemDate: { color: "#888", marginTop: 4 },
+  reminderDetail: { color: "#B9A8FF", marginTop: 6, fontSize: 12, fontWeight: "700" },
   actionsRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
   materialActions: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
   materialGroup: { marginTop: 18 },

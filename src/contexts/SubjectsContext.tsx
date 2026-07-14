@@ -23,6 +23,7 @@ import {
   getSubjects,
   saveSubjects,
 } from "../services/subjectsStorage";
+import { hydrateMaterialForPlatform } from "../services/materials";
 
 function normalizeSubject(subject: Subject): Subject {
   return {
@@ -145,7 +146,13 @@ export function SubjectsProvider(
         await getSubjects();
 
 
-      setSubjects(saved.map(normalizeSubject));
+      const normalizedSubjects = saved.map(normalizeSubject);
+      const hydratedSubjects = await Promise.all(normalizedSubjects.map(async (subject) => ({
+        ...subject,
+        materials: await Promise.all(subject.materials.map(hydrateMaterialForPlatform)),
+      })));
+
+      setSubjects(hydratedSubjects);
 
 
     }

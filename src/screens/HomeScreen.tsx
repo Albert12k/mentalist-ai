@@ -7,6 +7,7 @@ import XPBar from "../components/XPBar";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { useProfile } from "../contexts/ProfileContext";
 import { getStudyByMode, generateStudyPlan, StudyRecommendation } from "../services/studyPlanner";
+import { getActivityReminders } from "../services/activityReminders";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 import { colors } from "../theme/colors";
 
@@ -36,6 +37,7 @@ export default function HomeScreen() {
   const recommendations = getStudyByMode(plan, studyMode);
   const totalXP = getTotalXP(subjects, profile.bonusXP);
   const levelProgress = getLevelProgress(totalXP);
+  const activityReminders = getActivityReminders(subjects);
   const averageRetention = subjects.length === 0
     ? 0
     : Math.round(subjects.reduce((total, subject) => total + subject.retention, 0) / subjects.length);
@@ -54,6 +56,26 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Mentalis AI</Text>
         <Text style={styles.subtitle}>Academia para o cérebro</Text>
+
+        {activityReminders.length > 0 ? (
+          <View style={styles.reminderCard}>
+            <Text style={styles.reminderTitle}>Lembretes de atividades</Text>
+            <Text style={styles.reminderSubtitle}>Prazos que estão chegando.</Text>
+            {activityReminders.map((reminder) => (
+              <Pressable
+                key={`${reminder.subject.id}-${reminder.event.id}`}
+                onPress={() => navigation.navigate("SubjectDetails", { subject: reminder.subject })}
+                style={styles.reminderItem}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reminderItemTitle}>{reminder.event.title}</Text>
+                  <Text style={styles.reminderItemSubject}>{reminder.subject.name}</Text>
+                </View>
+                <Text style={styles.reminderDays}>{reminder.daysUntil} dia(s)</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Como você quer treinar?</Text>
@@ -145,6 +167,13 @@ const styles = {
     marginBottom: 16,
   },
   cardTitle: { color: "white", fontSize: 17, fontWeight: "700" },
+  reminderCard: { backgroundColor: "#33231A", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#B35C00", marginBottom: 16 },
+  reminderTitle: { color: "#FFD180", fontSize: 17, fontWeight: "700" },
+  reminderSubtitle: { color: "#D9B99C", marginTop: 4 },
+  reminderItem: { flexDirection: "row", alignItems: "center", backgroundColor: "#221810", padding: 12, borderRadius: 10, marginTop: 10 },
+  reminderItemTitle: { color: "white", fontWeight: "700" },
+  reminderItemSubject: { color: "#D9B99C", marginTop: 3, fontSize: 12 },
+  reminderDays: { color: "#FFD180", fontWeight: "800", marginLeft: 10 },
   modeButton: {
     backgroundColor: "#141424",
     padding: 13,

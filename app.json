@@ -36,6 +36,13 @@
           "recordAudioAndroid": true,
           "enableBackgroundRecording": false
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7C4DFF",
+          "defaultChannel": "activity-reminders"
+        }
       ]
     ]
   }

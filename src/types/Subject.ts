@@ -126,6 +126,9 @@ export type SubjectContent = {
 
 export type SubjectEvent = {
 
+  // IDs das notificações locais, usados quando a data da atividade muda.
+  notificationIds?: string[];
+
 
   // 🆔 identificação
 
@@ -234,6 +237,10 @@ export type SubjectMaterial = {
   mimeType?: string;
   size?: number;
   durationMillis?: number;
+
+  // Chave do IndexedDB usada apenas na web. O URI do navegador pode mudar
+  // depois de recarregar a página, mas esta chave permite recriá-lo.
+  webStorageKey?: string;
 
   // Data em que o arquivo foi incluído. Ela organiza a biblioteca da matéria.
   postedAt: string;

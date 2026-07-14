@@ -13,6 +13,73 @@ export type MaterialDraft = Omit<SubjectMaterial, "id" | "postedAt" | "category"
   category: SubjectMaterialCategory;
 };
 
+type PersistedMaterialFile = {
+  uri: string;
+  webStorageKey?: string;
+};
+
+const WEB_DATABASE_NAME = "mentalis-materials";
+const WEB_STORE_NAME = "files";
+
+function createWebStorageKey(): string {
+  return `material-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// IndexedDB guarda o Blob escolhido pelo usuário no navegador. Diferente de
+// uma blob URL comum, ele continua disponível mesmo depois de recarregar a web.
+async function openWebMaterialsDatabase(): Promise<IDBDatabase | null> {
+  if (typeof indexedDB === "undefined") return null;
+
+  return new Promise((resolve) => {
+    const request = indexedDB.open(WEB_DATABASE_NAME, 1);
+
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(WEB_STORE_NAME)) {
+        request.result.createObjectStore(WEB_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+  });
+}
+
+async function saveWebMaterial(blob: Blob, storageKey: string): Promise<boolean> {
+  const database = await openWebMaterialsDatabase();
+  if (!database) return false;
+
+  return new Promise((resolve) => {
+    const transaction = database.transaction(WEB_STORE_NAME, "readwrite");
+    transaction.objectStore(WEB_STORE_NAME).put(blob, storageKey);
+    transaction.oncomplete = () => resolve(true);
+    transaction.onerror = () => resolve(false);
+  });
+}
+
+async function getWebMaterial(storageKey: string): Promise<Blob | null> {
+  const database = await openWebMaterialsDatabase();
+  if (!database) return null;
+
+  return new Promise((resolve) => {
+    const request = database.transaction(WEB_STORE_NAME, "readonly")
+      .objectStore(WEB_STORE_NAME)
+      .get(storageKey);
+    request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : null);
+    request.onerror = () => resolve(null);
+  });
+}
+
+async function deleteWebMaterial(storageKey: string): Promise<void> {
+  const database = await openWebMaterialsDatabase();
+  if (!database) return;
+
+  await new Promise<void>((resolve) => {
+    const transaction = database.transaction(WEB_STORE_NAME, "readwrite");
+    transaction.objectStore(WEB_STORE_NAME).delete(storageKey);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => resolve();
+  });
+}
+
 export const materialCategoryLabels: Record<SubjectMaterialCategory, string> = {
   lesson: "Aula",
   notes: "Anotação",
@@ -105,8 +172,23 @@ function safeFileName(fileName: string): string {
 // No Android e iOS, copiamos PDFs e fotos para a pasta de documentos do app.
 // Assim o material não depende do cache temporário do seletor de arquivos.
 // No navegador, o próprio navegador controla o arquivo selecionado durante a sessão.
-export async function persistImportedMaterial(sourceUri: string, fileName: string): Promise<string> {
-  if (Platform.OS === "web") return sourceUri;
+export async function persistImportedMaterial(
+  sourceUri: string,
+  fileName: string,
+): Promise<PersistedMaterialFile> {
+  if (Platform.OS === "web") {
+    try {
+      const blob = await fetch(sourceUri).then((response) => response.blob());
+      const webStorageKey = createWebStorageKey();
+      const saved = await saveWebMaterial(blob, webStorageKey);
+
+      return { uri: sourceUri, ...(saved ? { webStorageKey } : {}) };
+    } catch {
+      // Se o navegador bloquear o acesso ao arquivo, ele ainda fica utilizável
+      // durante a sessão atual pela URL original do seletor.
+      return { uri: sourceUri };
+    }
+  }
 
   const materialsDirectory = new Directory(Paths.document, "mentalis-materials");
   materialsDirectory.create({ idempotent: true, intermediates: true });
@@ -115,14 +197,26 @@ export async function persistImportedMaterial(sourceUri: string, fileName: strin
   const destination = new File(materialsDirectory, `${Date.now()}-${safeFileName(fileName)}`);
 
   await source.copy(destination);
-  return destination.uri;
+  return { uri: destination.uri };
+}
+
+// Recria uma URL temporária para exibir ou abrir o arquivo armazenado no
+// IndexedDB quando o aplicativo web é carregado novamente.
+export async function hydrateMaterialForPlatform(material: SubjectMaterial): Promise<SubjectMaterial> {
+  if (Platform.OS !== "web" || !material.webStorageKey) return material;
+
+  const blob = await getWebMaterial(material.webStorageKey);
+  return blob ? { ...material, uri: URL.createObjectURL(blob) } : material;
 }
 
 // Quando o estudante cancela a importação ou exclui um material, removemos a
 // cópia que estava na pasta de documentos. Na web o navegador administra o
 // arquivo selecionado, então não há arquivo local do app para apagar.
-export function deleteLocalMaterial(uri: string): void {
-  if (Platform.OS === "web") return;
+export async function deleteLocalMaterial(uri: string, webStorageKey?: string): Promise<void> {
+  if (Platform.OS === "web") {
+    if (webStorageKey) await deleteWebMaterial(webStorageKey);
+    return;
+  }
 
   try {
     const file = new File(uri);
