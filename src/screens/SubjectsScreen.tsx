@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   Platform,
@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -20,6 +21,24 @@ export default function SubjectsScreen() {
   const { subjects, addSubject, updateSubject, removeSubject } = useSubjects();
   const [createVisible, setCreateVisible] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"recent" | "name" | "retention">("recent");
+
+  // A busca e a ordem acontecem somente na tela: nenhuma informação da matéria
+  // é alterada enquanto o estudante procura ou muda a visualização.
+  const visibleSubjects = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase("pt-BR");
+    const filtered = subjects.filter((subject) => (
+      subject.name.toLocaleLowerCase("pt-BR").includes(normalizedSearch)
+      || (subject.description ?? "").toLocaleLowerCase("pt-BR").includes(normalizedSearch)
+    ));
+
+    return filtered.sort((first, second) => {
+      if (sort === "name") return first.name.localeCompare(second.name, "pt-BR");
+      if (sort === "retention") return first.retention - second.retention;
+      return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+    });
+  }, [search, sort, subjects]);
 
   function openDetails(subject: Subject) {
     navigation.navigate("SubjectDetails", { subject });
@@ -29,6 +48,15 @@ export default function SubjectsScreen() {
     updateSubject({
       ...subject,
       absences: subject.absences + 1,
+    });
+  }
+
+  function handleRemoveAbsence(subject: Subject) {
+    if (subject.absences === 0) return;
+
+    updateSubject({
+      ...subject,
+      absences: subject.absences - 1,
     });
   }
 
@@ -58,14 +86,34 @@ export default function SubjectsScreen() {
         <Text style={styles.subtitle}>Organize seus estudos e acompanhe suas faltas.</Text>
       </View>
 
+      {subjects.length > 0 ? (
+        <>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar matéria ou descrição"
+            placeholderTextColor="#77778E"
+            style={styles.searchInput}
+          />
+          <View style={styles.sortRow}>
+            <SortButton label="Recentes" active={sort === "recent"} onPress={() => setSort("recent")} />
+            <SortButton label="A-Z" active={sort === "name"} onPress={() => setSort("name")} />
+            <SortButton label="Menor retenção" active={sort === "retention"} onPress={() => setSort("retention")} />
+          </View>
+          <Text style={styles.resultCount}>{visibleSubjects.length} matéria{visibleSubjects.length === 1 ? "" : "s"} encontrada{visibleSubjects.length === 1 ? "" : "s"}</Text>
+        </>
+      ) : null}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
       >
         {subjects.length === 0 ? (
           <Text style={styles.empty}>Nenhuma matéria criada ainda.</Text>
+        ) : visibleSubjects.length === 0 ? (
+          <Text style={styles.empty}>Nenhuma matéria corresponde à sua busca.</Text>
         ) : (
-          subjects.map((subject) => (
+          visibleSubjects.map((subject) => (
             <View
               key={subject.id}
               style={[styles.subjectCard, { borderLeftColor: subject.color }]}
@@ -80,6 +128,7 @@ export default function SubjectsScreen() {
               <View style={styles.actions}>
                 <ActionButton label="Estudar" color="#7C4DFF" onPress={() => openDetails(subject)} />
                 <ActionButton label="Falta +1" color="#B35C00" onPress={() => handleRegisterAbsence(subject)} />
+                <ActionButton label="Falta -1" color="#6D4C41" onPress={() => handleRemoveAbsence(subject)} />
                 <ActionButton label="Editar" color="#263238" onPress={() => setSelectedSubject(subject)} />
                 <ActionButton label="Excluir" color="#B00020" onPress={() => handleDelete(subject)} />
               </View>
@@ -107,6 +156,14 @@ export default function SubjectsScreen() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+function SortButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.sortButton, active && styles.sortButtonActive]}>
+      <Text style={[styles.sortButtonText, active && styles.sortButtonTextActive]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -144,6 +201,33 @@ const styles = {
     color: "#888",
     marginTop: 6,
   },
+  searchInput: {
+    backgroundColor: "#161625",
+    borderWidth: 1,
+    borderColor: "#2A2A3E",
+    borderRadius: 12,
+    color: "white",
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+  },
+  sortRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 12,
+  },
+  sortButton: {
+    borderWidth: 1,
+    borderColor: "#3A3A52",
+    borderRadius: 18,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    marginRight: 8,
+    marginBottom: 6,
+  },
+  sortButtonActive: { backgroundColor: "#7C4DFF", borderColor: "#7C4DFF" },
+  sortButtonText: { color: "#B8B8CC", fontSize: 12, fontWeight: "700" },
+  sortButtonTextActive: { color: "white" },
+  resultCount: { color: "#8888AA", fontSize: 12, marginTop: 5, marginBottom: 8 },
   listContent: {
     paddingBottom: 120,
   },
