@@ -7,6 +7,7 @@ import AgendaScreen from "../screens/AgendaScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import ProgressScreen from "../screens/ProgressScreen";
+import ReviewQueueScreen from "../screens/ReviewQueueScreen";
 import SubjectDetailsScreen from "../screens/SubjectDetailsScreen";
 import SubjectsScreen from "../screens/SubjectsScreen";
 import TrainingScreen from "../screens/TrainingScreen";
@@ -22,6 +23,7 @@ export type RootStackParamList = {
     subjectIds: string[];
   };
   Tutor: undefined;
+  ReviewQueue: undefined;
 };
 
 const Tab = createBottomTabNavigator();
@@ -58,6 +60,7 @@ export default function AppNavigator() {
         <Stack.Screen name="SubjectDetails" component={SubjectDetailsScreen} />
         <Stack.Screen name="Training" component={TrainingScreen} />
         <Stack.Screen name="Tutor" component={TutorScreen} />
+        <Stack.Screen name="ReviewQueue" component={ReviewQueueScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

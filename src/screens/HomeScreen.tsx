@@ -8,6 +8,7 @@ import { useSubjects } from "../contexts/SubjectsContext";
 import { useProfile } from "../contexts/ProfileContext";
 import { getStudyByMode, generateStudyPlan, StudyRecommendation } from "../services/studyPlanner";
 import { getActivityReminders } from "../services/activityReminders";
+import { getDueFlashcards } from "../services/flashcardReview";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 import { colors } from "../theme/colors";
 
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const totalXP = getTotalXP(subjects, profile.bonusXP);
   const levelProgress = getLevelProgress(totalXP);
   const activityReminders = getActivityReminders(subjects);
+  const dueFlashcards = subjects.reduce((total, subject) => total + getDueFlashcards(subject.flashcards).length, 0);
   const averageRetention = subjects.length === 0
     ? 0
     : Math.round(subjects.reduce((total, subject) => total + subject.retention, 0) / subjects.length);
@@ -129,6 +131,16 @@ export default function HomeScreen() {
           )}
         </View>
 
+        <Pressable onPress={() => navigation.navigate("ReviewQueue")} style={styles.reviewCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reviewTitle}>Revisões de hoje</Text>
+            <Text style={styles.reviewDescription}>
+              {dueFlashcards > 0 ? `${dueFlashcards} flashcard(s) esperando por você.` : "Você não tem flashcards pendentes agora."}
+            </Text>
+          </View>
+          <Text style={styles.reviewAction}>{dueFlashcards > 0 ? "Revisar" : "Ver"}</Text>
+        </Pressable>
+
         <View style={styles.card}>
           <XPBar level={levelProgress.level} xp={levelProgress.progressPercent} />
         </View>
@@ -202,4 +214,8 @@ const styles = {
   retentionText: { color: colors.success, marginTop: 8, fontWeight: "700" },
   tutorButton: { backgroundColor: "#263238", padding: 13, borderRadius: 12, marginTop: 14 },
   tutorButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
+  reviewCard: { backgroundColor: "#1B1930", borderWidth: 1, borderColor: "#5846AA", borderRadius: 16, padding: 16, marginBottom: 16, flexDirection: "row", alignItems: "center" },
+  reviewTitle: { color: "white", fontSize: 17, fontWeight: "700" },
+  reviewDescription: { color: "#B8B1D8", marginTop: 5, fontSize: 13 },
+  reviewAction: { color: "#D5C8FF", fontWeight: "800", marginLeft: 12 },
 } as const;
