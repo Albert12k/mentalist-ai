@@ -12,6 +12,7 @@ export async function getProfile(): Promise<UserProfile> {
     const savedProfile = JSON.parse(data) as Partial<UserProfile>;
     return {
       name: savedProfile.name?.trim() || defaultUserProfile.name,
+      avatar: typeof savedProfile.avatar === "string" ? savedProfile.avatar : undefined,
       weeklyGoalMinutes: Math.max(30, Math.min(savedProfile.weeklyGoalMinutes ?? defaultUserProfile.weeklyGoalMinutes, 2_400)),
       bonusXP: Math.max(0, savedProfile.bonusXP ?? 0),
       claimedChallengeIds: Array.isArray(savedProfile.claimedChallengeIds)

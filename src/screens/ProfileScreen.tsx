@@ -8,7 +8,9 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 import ProgressBar from "../components/ProgressBar";
 import { useProfile } from "../contexts/ProfileContext";
@@ -66,6 +68,11 @@ export default function ProfileScreen() {
   const totalContents = subjects.reduce((total, subject) => total + subject.contents.length, 0);
   const initial = profile.name.trim().charAt(0).toUpperCase() || "E";
 
+  async function pickAvatar() {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (!result.canceled) updateProfile({ ...profile, avatar: result.assets[0].uri });
+  }
+
   function openEditor() {
     setNameInput(profile.name);
     setGoalInput(String(profile.weeklyGoalMinutes));
@@ -93,8 +100,8 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <View style={styles.heroTop}>
-            <View style={styles.avatar}><Text style={styles.avatarText}>{initial}</Text></View>
-            <Pressable onPress={openEditor} style={styles.editButton}><Text style={styles.editButtonText}>Editar perfil</Text></Pressable>
+            <Pressable onPress={pickAvatar} style={styles.avatar}>{profile.avatar ? <Image source={{ uri: profile.avatar }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{initial}</Text>}</Pressable>
+            <View><Pressable onPress={pickAvatar} style={styles.photoButton}><Text style={styles.editButtonText}>Foto</Text></Pressable><Pressable onPress={openEditor} style={styles.editButton}><Text style={styles.editButtonText}>Editar perfil</Text></Pressable></View>
           </View>
           <Text style={styles.name}>{profile.name}</Text>
           <Text style={styles.heroSubtitle}>Nível {levelProgress.level} • {totalXP} XP acumulado</Text>
@@ -178,6 +185,8 @@ const styles = {
   heroCard: { backgroundColor: "#241A47", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#5E46A8", marginBottom: 16 },
   heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#B9A8FF", alignItems: "center", justifyContent: "center" },
+  avatarImage: { width: "100%", height: "100%", borderRadius: 26 },
+  photoButton: { backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, marginBottom: 6 },
   avatarText: { color: "#20163D", fontSize: 24, fontWeight: "800" },
   editButton: { backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10 },
   editButtonText: { color: "white", fontWeight: "700", fontSize: 12 },

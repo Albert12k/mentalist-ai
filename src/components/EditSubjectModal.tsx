@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 import ColorPicker from "./ColorPicker";
 import { Subject, SubjectDifficulty, StudyFrequency, StudyGoal } from "../types/Subject";
@@ -50,6 +51,7 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
   const [difficulty, setDifficulty] = useState<SubjectDifficulty>(subject.difficulty);
   const [goal, setGoal] = useState<StudyGoal>(subject.goal);
   const [frequency, setFrequency] = useState<StudyFrequency>(subject.frequency);
+  const [image, setImage] = useState(subject.image);
 
   useEffect(() => {
     setName(subject.name);
@@ -58,6 +60,7 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
     setDifficulty(subject.difficulty);
     setGoal(subject.goal);
     setFrequency(subject.frequency);
+    setImage(subject.image);
   }, [subject]);
 
   function handleSave() {
@@ -71,10 +74,16 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
       name: name.trim(),
       description: description.trim(),
       color: selectedColor,
+      image,
       difficulty,
       goal,
       frequency,
     });
+  }
+
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (!result.canceled) setImage(result.assets[0].uri);
   }
 
   return (
@@ -97,6 +106,9 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
 
           <Text style={labelStyle}>Cor da matéria</Text>
           <ColorPicker selected={selectedColor} onSelect={setSelectedColor} />
+          <Pressable onPress={pickImage} style={{ backgroundColor: "#263238", padding: 12, borderRadius: 10, marginTop: 10 }}>
+            <Text style={{ color: "white", textAlign: "center", fontWeight: "700" }}>{image ? "Trocar foto da matéria" : "+ Adicionar foto da matéria"}</Text>
+          </Pressable>
 
           <Text style={labelStyle}>Dificuldade</Text>
           <View style={optionRowStyle}>

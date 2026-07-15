@@ -8,6 +8,7 @@ import {
   Text,
   TextInput,
   View,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -119,6 +120,7 @@ export default function SubjectsScreen() {
               style={[styles.subjectCard, { borderLeftColor: subject.color }]}
             >
               <Pressable onPress={() => openDetails(subject)}>
+                {subject.image ? <Image source={{ uri: subject.image }} style={styles.subjectImage} /> : null}
                 <Text style={styles.subjectName}>{subject.name}</Text>
                 <Text style={styles.detail}>Retenção: {subject.retention}%</Text>
                 <Text style={styles.detail}>Dificuldade: {subject.difficulty}</Text>
@@ -246,6 +248,7 @@ const styles = {
     fontSize: 19,
     fontWeight: "700",
   },
+  subjectImage: { width: "100%", height: 120, borderRadius: 10, marginBottom: 12 },
   detail: {
     color: "#AAA",
     marginTop: 7,
