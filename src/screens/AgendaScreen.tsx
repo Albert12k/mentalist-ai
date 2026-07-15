@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 import { useSubjects } from "../contexts/SubjectsContext";
+import QuickAddActivityModal from "../components/QuickAddActivityModal";
+import { scheduleActivityReminders } from "../services/activityReminders";
 import { Subject, SubjectEvent } from "../types/Subject";
 
 type AgendaFilter = "next" | "month" | "all";
@@ -43,8 +45,9 @@ function getTimeLabel(daysUntil: number) {
 
 export default function AgendaScreen() {
   const navigation = useNavigation<any>();
-  const { subjects } = useSubjects();
+  const { subjects, updateSubject } = useSubjects();
   const [filter, setFilter] = useState<AgendaFilter>("next");
+  const [createVisible, setCreateVisible] = useState(false);
 
   const events = useMemo<AgendaItem[]>(() => (
     subjects
@@ -64,11 +67,33 @@ export default function AgendaScreen() {
   const overdueCount = events.filter((item) => item.daysUntil < 0).length;
   const nextEvent = events.find((item) => item.daysUntil >= 0);
 
+  async function handleCreateActivity(subjectId: string, event: SubjectEvent) {
+    const subject = subjects.find((item) => item.id === subjectId);
+    if (!subject) return;
+
+    let notificationIds: string[] = [];
+    try {
+      notificationIds = await scheduleActivityReminders(event, subject.name);
+    } catch {
+      Alert.alert("Atividade salva", "Não foi possível programar os alertas do dispositivo agora.");
+    }
+
+    updateSubject({ ...subject, events: [...subject.events, { ...event, notificationIds }] });
+    setCreateVisible(false);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Agenda</Text>
-        <Text style={styles.subtitle}>Veja provas, trabalhos e revisões em um só lugar.</Text>
+        <View style={styles.titleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Agenda</Text>
+            <Text style={styles.subtitle}>Veja provas, trabalhos e revisões em um só lugar.</Text>
+          </View>
+          <Pressable onPress={() => setCreateVisible(true)} style={styles.addButton}>
+            <Text style={styles.addButtonText}>+ Atividade</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>{nextEvent ? "Próximo compromisso" : "Sua agenda está livre"}</Text>
@@ -116,6 +141,7 @@ export default function AgendaScreen() {
           </Pressable>
         ))}
       </ScrollView>
+      <QuickAddActivityModal visible={createVisible} subjects={subjects} onClose={() => setCreateVisible(false)} onSave={handleCreateActivity} />
     </SafeAreaView>
   );
 }
@@ -131,8 +157,11 @@ function FilterButton({ label, active, onPress }: { label: string; active: boole
 const styles = {
   safeArea: { flex: 1, backgroundColor: "#080810" },
   content: { padding: 20, paddingBottom: 40 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 20 },
   title: { color: "white", fontSize: 30, fontWeight: "700" },
-  subtitle: { color: "#8888AA", marginTop: 6, marginBottom: 20 },
+  subtitle: { color: "#8888AA", marginTop: 6 },
+  addButton: { backgroundColor: "#7C4DFF", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9, marginLeft: 10 },
+  addButtonText: { color: "white", fontSize: 12, fontWeight: "800" },
   summaryCard: { backgroundColor: "#342769", padding: 17, borderRadius: 16 },
   summaryTitle: { color: "#D6CFFF", fontSize: 13, fontWeight: "700" },
   summaryEvent: { color: "white", fontSize: 19, fontWeight: "700", marginTop: 8 },
