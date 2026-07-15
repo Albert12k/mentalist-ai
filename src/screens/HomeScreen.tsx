@@ -14,10 +14,10 @@ import { colors } from "../theme/colors";
 
 type StudyMode = "manual" | "guided" | "auto";
 
-const modeInformation: Record<StudyMode, { title: string; description: string }> = {
-  manual: { title: "Escolher matéria", description: "Você decide por onde começar." },
-  guided: { title: "Treino guiado", description: "Duas prioridades recomendadas." },
-  auto: { title: "Treino automático", description: "Uma sequência pronta para seguir." },
+const modeInformation: Record<StudyMode, { number: string; title: string; description: string; detail: string }> = {
+  manual: { number: "01", title: "Escolher matéria", description: "Você tem o controle", detail: "Veja todas as matérias e comece pela que quiser." },
+  guided: { number: "02", title: "Treino guiado", description: "Decida com ajuda", detail: "O Mentalis separa as 2 prioridades mais importantes." },
+  auto: { number: "03", title: "Treino automático", description: "Só seguir o plano", detail: "Uma fila completa de até 5 matérias para estudar." },
 };
 
 function getTodayKey() {
@@ -127,18 +127,33 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        <Text style={styles.sectionTitle}>Seu treino</Text>
-        <View style={styles.modeRow}>
+        <Text style={styles.sectionTitle}>Como você quer estudar?</Text>
+        <Text style={styles.sectionHint}>Escolha um modo. Você pode trocar quando quiser.</Text>
+        <View style={styles.modeList}>
           {(Object.keys(modeInformation) as StudyMode[]).map((mode) => (
             <Pressable key={mode} onPress={() => setStudyMode(mode)} style={[styles.modeButton, studyMode === mode && styles.modeButtonActive]}>
-              <Text style={styles.modeTitle}>{modeInformation[mode].title}</Text>
+              <View style={styles.modeHeader}>
+                <View style={[styles.modeNumber, studyMode === mode && styles.modeNumberActive]}><Text style={[styles.modeNumberText, studyMode === mode && styles.modeNumberTextActive]}>{modeInformation[mode].number}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modeTitle}>{modeInformation[mode].title}</Text>
+                  <Text style={styles.modeDescription}>{modeInformation[mode].description}</Text>
+                </View>
+                {studyMode === mode ? <Text style={styles.selectedMark}>Selecionado</Text> : null}
+              </View>
+              <Text style={styles.modeDetail}>{modeInformation[mode].detail}</Text>
             </Pressable>
           ))}
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{modeInformation[studyMode].title}</Text>
-          <Text style={styles.muted}>{modeInformation[studyMode].description}</Text>
+        <View style={styles.trainingCard}>
+          <View style={styles.rowBetween}>
+            <View>
+              <Text style={styles.trainingEyebrow}>SEU PLANO AGORA</Text>
+              <Text style={styles.cardTitle}>{modeInformation[studyMode].title}</Text>
+            </View>
+            <Text style={styles.trainingCount}>{selectedRecommendations.length}</Text>
+          </View>
+          <Text style={styles.muted}>{modeInformation[studyMode].detail}</Text>
           {selectedRecommendations.length === 0 ? (
             <Text style={styles.muted}>Crie uma matéria para montar seu primeiro treino.</Text>
           ) : (
@@ -147,10 +162,11 @@ export default function HomeScreen() {
                 <Pressable key={item.subject.id} onPress={() => startTraining([item], "manual")} style={[styles.recommendation, { borderLeftColor: item.subject.color }]}>
                   <View style={styles.rowBetween}><Text style={styles.recommendationTitle}>{index + 1}. {item.subject.name}</Text><Text style={styles.priority}>{item.priority}%</Text></View>
                   <Text style={styles.recommendationReason}>{item.reason}</Text>
+                  {studyMode === "manual" ? <Text style={styles.quickStart}>Toque para estudar esta matéria</Text> : null}
                 </Pressable>
               ))}
               <Pressable onPress={() => startTraining(selectedRecommendations, studyMode)} style={styles.startButton}>
-                <Text style={styles.startButtonText}>{studyMode === "manual" ? "Estudar matéria selecionada" : "Iniciar treino"}</Text>
+                <Text style={styles.startButtonText}>{studyMode === "manual" ? "Começar pela primeira matéria" : studyMode === "guided" ? "Iniciar treino guiado" : "Iniciar sequência automática"}</Text>
               </Pressable>
             </>
           )}
@@ -193,17 +209,30 @@ const styles = {
   reminderItemTitle: { color: "white", fontWeight: "700" },
   reminderItemSubject: { color: "#D9B99C", marginTop: 3, fontSize: 12 },
   reminderDays: { color: "#FFD180", fontWeight: "800", marginLeft: 10 },
-  sectionTitle: { color: "white", fontSize: 20, fontWeight: "800", marginBottom: 12 },
-  modeRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
-  modeButton: { backgroundColor: "#161625", paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, marginRight: 8, marginBottom: 8 },
-  modeButtonActive: { backgroundColor: "#7C4DFF" },
-  modeTitle: { color: "white", fontSize: 12, fontWeight: "700" },
+  sectionTitle: { color: "white", fontSize: 20, fontWeight: "800" },
+  sectionHint: { color: "#9290A9", marginTop: 5, marginBottom: 12 },
+  modeList: { marginBottom: 16 },
+  modeButton: { backgroundColor: "#161625", borderWidth: 1, borderColor: "#29283B", borderRadius: 14, padding: 13, marginBottom: 9 },
+  modeButtonActive: { backgroundColor: "#282043", borderColor: "#7C4DFF" },
+  modeHeader: { flexDirection: "row", alignItems: "center" },
+  modeNumber: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#29283B", alignItems: "center", justifyContent: "center", marginRight: 11 },
+  modeNumberActive: { backgroundColor: "#B9A8FF" },
+  modeNumberText: { color: "#BEBBCD", fontWeight: "800", fontSize: 11 },
+  modeNumberTextActive: { color: "#251A4A" },
+  modeTitle: { color: "white", fontSize: 15, fontWeight: "800" },
+  modeDescription: { color: "#BBB7CE", fontSize: 12, marginTop: 3 },
+  modeDetail: { color: "#AAA7B8", fontSize: 12, lineHeight: 18, marginTop: 10, marginLeft: 47 },
+  selectedMark: { color: "#D8CEFF", fontSize: 11, fontWeight: "800", marginLeft: 8 },
   card: { backgroundColor: "#161625", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 16 },
+  trainingCard: { backgroundColor: "#161625", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#3B3261", marginBottom: 16 },
+  trainingEyebrow: { color: "#B9A8FF", fontSize: 10, fontWeight: "800", letterSpacing: 0.6, marginBottom: 4 },
+  trainingCount: { color: "#C9BEFF", backgroundColor: "#2E2850", borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, fontWeight: "800" },
   muted: { color: colors.subtitle, marginTop: 8, lineHeight: 19 },
   recommendation: { marginTop: 12, padding: 12, borderRadius: 10, backgroundColor: "#141424", borderLeftWidth: 4 },
   recommendationTitle: { color: "white", fontSize: 16, fontWeight: "700", flex: 1, marginRight: 8 },
   priority: { color: "#B9A8FF", fontWeight: "800" },
   recommendationReason: { color: "#AAA", marginTop: 6 },
+  quickStart: { color: "#C1B5FF", fontSize: 11, fontWeight: "700", marginTop: 9 },
   startButton: { backgroundColor: colors.primary, padding: 14, borderRadius: 12, marginTop: 15 },
   startButtonText: { color: "white", textAlign: "center", fontWeight: "800" },
   tutorCard: { backgroundColor: "#1B2930", borderRadius: 16, padding: 16 },
