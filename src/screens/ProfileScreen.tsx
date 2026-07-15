@@ -143,6 +143,14 @@ export default function ProfileScreen() {
             {studySessions.length === 0 ? "Registre uma sessão para começar a acompanhar sua rotina." : `Você já registrou ${totalMinutes} minuto(s) de estudo. Continue alimentando suas sessões para tornar as recomendações mais precisas.`}
           </Text>
         </View>
+
+        <View style={styles.achievementCard}>
+          <Text style={styles.cardTitle}>Suas conquistas</Text>
+          <Text style={styles.achievementValue}>{profile.claimedChallengeIds.length} desafios resgatados</Text>
+          <Text style={styles.achievementDescription}>
+            Você já acumulou {profile.bonusXP} XP em recompensas. Continue concluindo desafios para evoluir mais rápido.
+          </Text>
+        </View>
       </ScrollView>
 
       <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
@@ -199,4 +207,7 @@ const styles = {
   saveButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   cancelButton: { padding: 15, marginTop: 8 },
   cancelButtonText: { color: "#888", textAlign: "center" },
+  achievementCard: { backgroundColor: "#2A2410", borderWidth: 1, borderColor: "#685316", borderRadius: 16, padding: 16, marginTop: 12 },
+  achievementValue: { color: "#FFD54F", fontSize: 20, fontWeight: "700", marginTop: 10 },
+  achievementDescription: { color: "#D8C78E", marginTop: 8, lineHeight: 20 },
 } as const;

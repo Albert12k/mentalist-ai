@@ -12,6 +12,29 @@ type SubjectStats = {
   completedContents: number;
 };
 
+type WeekDay = { key: string; label: string; minutes: number };
+
+function getLastSevenDays(subjects: Subject[]): WeekDay[] {
+  const formatter = new Intl.DateTimeFormat("pt-BR", { weekday: "short" });
+  const days: WeekDay[] = [];
+
+  for (let index = 6; index >= 0; index -= 1) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - index);
+    const key = date.toISOString().slice(0, 10);
+    const minutes = subjects.reduce((total, subject) => (
+      total + subject.studyHistory
+        .filter((session) => session.date.slice(0, 10) === key)
+        .reduce((sessionTotal, session) => sessionTotal + session.duration, 0)
+    ), 0);
+
+    days.push({ key, label: formatter.format(date).replace(".", ""), minutes });
+  }
+
+  return days;
+}
+
 function getSubjectStats(subject: Subject): SubjectStats {
   return {
     sessions: subject.studyHistory.length,
@@ -45,6 +68,8 @@ export default function ProgressScreen() {
   const sortedSubjects = subjects
     .slice()
     .sort((first, second) => getSubjectStats(second).minutes - getSubjectStats(first).minutes);
+  const weekDays = getLastSevenDays(subjects);
+  const peakMinutes = Math.max(...weekDays.map((day) => day.minutes), 1);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -82,6 +107,22 @@ export default function ProgressScreen() {
           <Text style={styles.cardTitle}>Conteúdos concluídos</Text>
           <ProgressBar value={contentProgress} color="#00B0FF" />
           <Text style={styles.cardDescription}>{contentProgress}% do conteúdo cadastrado</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Últimos 7 dias</Text>
+          <Text style={styles.cardDescription}>Minutos registrados por dia.</Text>
+          <View style={styles.weekChart}>
+            {weekDays.map((day) => (
+              <View key={day.key} style={styles.weekColumn}>
+                <Text style={styles.weekValue}>{day.minutes > 0 ? day.minutes : ""}</Text>
+                <View style={styles.weekBarTrack}>
+                  <View style={[styles.weekBar, { height: `${Math.max((day.minutes / peakMinutes) * 100, day.minutes > 0 ? 8 : 0)}%` }]} />
+                </View>
+                <Text style={styles.weekLabel}>{day.label}</Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>Por matéria</Text>
@@ -226,4 +267,10 @@ const styles = {
   subjectProgress: {
     marginTop: 12,
   },
+  weekChart: { height: 145, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 18 },
+  weekColumn: { flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end" },
+  weekValue: { color: "#C9BFFF", fontSize: 11, fontWeight: "700", marginBottom: 5 },
+  weekBarTrack: { height: 90, width: 12, borderRadius: 8, backgroundColor: "#29273A", justifyContent: "flex-end", overflow: "hidden" },
+  weekBar: { width: "100%", backgroundColor: "#7C4DFF", borderRadius: 8 },
+  weekLabel: { color: "#8888AA", textTransform: "capitalize", fontSize: 10, marginTop: 8 },
 } as const;

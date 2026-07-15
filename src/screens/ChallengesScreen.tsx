@@ -18,6 +18,9 @@ export default function ChallengesScreen() {
   );
   const claimedChallenges = new Set(profile.claimedChallengeIds);
   const completedChallenges = challenges.filter((challenge) => challenge.current >= challenge.target).length;
+  const nextChallenge = challenges
+    .filter((challenge) => challenge.current < challenge.target)
+    .sort((first, second) => (second.current / second.target) - (first.current / first.target))[0];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -29,6 +32,16 @@ export default function ChallengesScreen() {
           <Text style={styles.summaryTitle}>{completedChallenges}/{challenges.length} desafios concluídos</Text>
           <Text style={styles.summaryDescription}>Bônus resgatados: {profile.bonusXP} XP</Text>
         </View>
+
+        {nextChallenge ? (
+          <View style={styles.highlightCard}>
+            <Text style={styles.highlightLabel}>MAIS PRÓXIMO DE CONCLUIR</Text>
+            <Text style={styles.highlightTitle}>{nextChallenge.title}</Text>
+            <Text style={styles.highlightDescription}>
+              Faltam {Math.max(nextChallenge.target - nextChallenge.current, 0)} para desbloquear +{nextChallenge.rewardXP} XP.
+            </Text>
+          </View>
+        ) : null}
 
         {challenges.map((challenge) => {
           const complete = challenge.current >= challenge.target;
@@ -81,6 +94,10 @@ const styles = {
   summaryCard: { backgroundColor: "#342769", padding: 16, borderRadius: 16, marginBottom: 16 },
   summaryTitle: { color: "white", fontSize: 18, fontWeight: "700" },
   summaryDescription: { color: "#D6CFFF", marginTop: 7 },
+  highlightCard: { backgroundColor: "#172A25", borderWidth: 1, borderColor: "#285F4B", padding: 16, borderRadius: 16, marginBottom: 16 },
+  highlightLabel: { color: "#77D9AC", fontWeight: "800", fontSize: 11, letterSpacing: 0.5 },
+  highlightTitle: { color: "white", fontSize: 18, fontWeight: "700", marginTop: 8 },
+  highlightDescription: { color: "#B8D9C9", marginTop: 6, lineHeight: 20 },
   challengeCard: {
     backgroundColor: "#161625",
     padding: 16,
