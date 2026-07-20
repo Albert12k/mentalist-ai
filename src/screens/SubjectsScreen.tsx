@@ -17,6 +17,7 @@ import EditSubjectModal from "../components/EditSubjectModal";
 import { classModeLabels, formatClassDays } from "../constants/subjectSchedule";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { Subject } from "../types/Subject";
+import { deleteSubjectData } from "../services/subjectDeletion";
 
 export default function SubjectsScreen() {
   const navigation = useNavigation<any>();
@@ -52,16 +53,19 @@ export default function SubjectsScreen() {
   }
 
   function handleDelete(subject: Subject) {
-    const remove = () => removeSubject(subject.id);
+    const remove = async () => {
+      await deleteSubjectData(subject);
+      removeSubject(subject.id);
+    };
 
     if (Platform.OS === "web") {
-      if (window.confirm(`Deseja remover ${subject.name}?`)) remove();
+      if (window.confirm(`Excluir ${subject.name} e todos os seus materiais, atividades, faltas e históricos? Esta ação não pode ser desfeita.`)) void remove();
       return;
     }
 
-    Alert.alert("Excluir matéria", `Deseja remover ${subject.name}?`, [
+    Alert.alert("Excluir matéria por completo", `Todos os materiais, atividades, faltas e históricos de ${subject.name} serão apagados. Esta ação não pode ser desfeita.`, [
       { text: "Cancelar", style: "cancel" },
-      { text: "Excluir", style: "destructive", onPress: remove },
+      { text: "Excluir tudo", style: "destructive", onPress: () => void remove() },
     ]);
   }
 

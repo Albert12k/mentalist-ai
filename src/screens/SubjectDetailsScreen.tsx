@@ -204,6 +204,12 @@ export default function SubjectDetailsScreen() {
     });
   }
 
+  function handleDeleteLegacyAbsences() {
+    confirmRemoval(`Excluir ${legacyAbsences} falta(s) antiga(s) sem data?`, () => {
+      updateSubject({ ...subject, absences: absenceRecords.length });
+    });
+  }
+
   function handleSaveNotes(notes: string) {
     updateSubject({ ...subject, notes });
     setNotesVisible(false);
@@ -549,7 +555,12 @@ export default function SubjectDetailsScreen() {
           <Text style={styles.absenceCount}>
             {subject.absences} falta{subject.absences === 1 ? "" : "s"} registrada{subject.absences === 1 ? "" : "s"}
           </Text>
-          {legacyAbsences > 0 ? <Text style={styles.legacyAbsence}>{legacyAbsences} registro(s) antigo(s), sem data.</Text> : null}
+          {legacyAbsences > 0 ? (
+            <View style={styles.legacyAbsenceBox}>
+              <Text style={styles.legacyAbsence}>{legacyAbsences} registro(s) antigo(s), sem data.</Text>
+              <ActionButton label="Excluir antigas" color="#6D4C41" onPress={handleDeleteLegacyAbsences} />
+            </View>
+          ) : null}
           {absenceRecords.slice().sort((a, b) => b.date.localeCompare(a.date)).map((absence) => (
             <View key={absence.id} style={styles.absenceItem}>
               <View style={styles.absenceInfo}>
@@ -932,6 +943,7 @@ const styles = {
   detail: { color: "#AAA", marginTop: 10 },
   absenceCount: { color: "#FFB74D", marginTop: 10, fontWeight: "700" },
   legacyAbsence: { color: "#8E8EA3", marginTop: 6, fontSize: 12 },
+  legacyAbsenceBox: { backgroundColor: "#10101D", borderRadius: 10, padding: 10, marginTop: 10, alignItems: "flex-start" },
   absenceItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#10101D", padding: 12, borderRadius: 10, marginTop: 10 },
   absenceInfo: { flex: 1, paddingRight: 10 },
   studyButton: { backgroundColor: "#7C4DFF", padding: 15, borderRadius: 12, marginTop: 20 },

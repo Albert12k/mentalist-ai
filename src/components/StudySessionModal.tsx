@@ -12,6 +12,7 @@ type Props = {
 };
 
 type SessionMode = "timer" | "manual";
+type PomodoroPhase = "focus" | "break";
 
 export default function StudySessionModal({ visible, contents, onClose, onSave }: Props) {
   const { profile } = useProfile();
@@ -20,12 +21,17 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [remainingSeconds, setRemainingSeconds] = useState(25 * 60);
   const [deadline, setDeadline] = useState<number | null>(null);
+  const [phase, setPhase] = useState<PomodoroPhase>("focus");
+  const [completedCycles, setCompletedCycles] = useState(0);
+  const [accumulatedFocusSeconds, setAccumulatedFocusSeconds] = useState(0);
   const [contentId, setContentId] = useState<string | undefined>();
   const [completeContent, setCompleteContent] = useState(false);
 
   const running = deadline !== null;
-  const totalSeconds = timerMinutes * 60;
-  const elapsedSeconds = totalSeconds - remainingSeconds;
+  const focusSeconds = timerMinutes * 60;
+  const breakSeconds = 5 * 60;
+  const phaseSeconds = phase === "focus" ? focusSeconds : breakSeconds;
+  const elapsedSeconds = phaseSeconds - remainingSeconds;
 
   useEffect(() => {
     if (!visible) {
@@ -38,6 +44,9 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
     setTimerMinutes(defaultMinutes);
     setRemainingSeconds(defaultMinutes * 60);
     setDeadline(null);
+    setPhase("focus");
+    setCompletedCycles(0);
+    setAccumulatedFocusSeconds(0);
     setContentId(undefined);
     setCompleteContent(false);
   }, [visible, profile.defaultPomodoroMinutes]);
@@ -51,18 +60,31 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
       setRemainingSeconds(next);
       if (next === 0) {
         setDeadline(null);
-        Alert.alert("Pomodoro concluído", "Muito bem! Agora você pode salvar esta sessão de estudo.");
+        if (phase === "focus") {
+          setAccumulatedFocusSeconds((current) => current + focusSeconds);
+          setCompletedCycles((current) => current + 1);
+          setPhase("break");
+          setRemainingSeconds(breakSeconds);
+          Alert.alert("Foco concluído", "Hora de uma pausa de 5 minutos. Depois, continue para o próximo ciclo.");
+        } else {
+          setPhase("focus");
+          setRemainingSeconds(focusSeconds);
+          Alert.alert("Pausa concluída", "Você está pronto para começar outro ciclo de foco.");
+        }
       }
     };
     updateTimer();
     const interval = setInterval(updateTimer, 250);
     return () => clearInterval(interval);
-  }, [deadline]);
+  }, [deadline, phase, focusSeconds]);
 
   function selectTimer(minutes: number) {
     setTimerMinutes(minutes);
     setRemainingSeconds(minutes * 60);
     setDeadline(null);
+    setPhase("focus");
+    setCompletedCycles(0);
+    setAccumulatedFocusSeconds(0);
   }
 
   function toggleTimer() {
@@ -71,13 +93,16 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
       setDeadline(null);
       return;
     }
-    if (remainingSeconds === 0) setRemainingSeconds(totalSeconds);
-    setDeadline(Date.now() + (remainingSeconds === 0 ? totalSeconds : remainingSeconds) * 1000);
+    if (remainingSeconds === 0) setRemainingSeconds(phaseSeconds);
+    setDeadline(Date.now() + (remainingSeconds === 0 ? phaseSeconds : remainingSeconds) * 1000);
   }
 
   function resetTimer() {
     setDeadline(null);
-    setRemainingSeconds(totalSeconds);
+    setPhase("focus");
+    setRemainingSeconds(focusSeconds);
+    setCompletedCycles(0);
+    setAccumulatedFocusSeconds(0);
   }
 
   function saveManualSession() {
@@ -90,12 +115,20 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
   }
 
   function saveTimerSession() {
-    if (elapsedSeconds < 1) {
+    const currentFocusSeconds = phase === "focus" ? Math.max(0, elapsedSeconds) : 0;
+    const studiedSeconds = accumulatedFocusSeconds + currentFocusSeconds;
+    if (studiedSeconds < 1) {
       Alert.alert("Inicie o cronômetro", "Estude por algum tempo antes de salvar a sessão.");
       return;
     }
     setDeadline(null);
-    save(Math.max(1, Math.ceil(elapsedSeconds / 60)));
+    save(Math.max(1, Math.ceil(studiedSeconds / 60)));
+  }
+
+  function skipBreak() {
+    setDeadline(null);
+    setPhase("focus");
+    setRemainingSeconds(focusSeconds);
   }
 
   function save(durationMinutes: number) {
@@ -127,12 +160,14 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
 
           {mode === "timer" ? (
             <View style={styles.timerCard}>
-              <Text style={styles.timerEyebrow}>TEMPO DE FOCO</Text>
+              <Text style={styles.timerEyebrow}>{phase === "focus" ? "TEMPO DE FOCO" : "PAUSA"}</Text>
               <Text style={styles.timer}>{timeText}</Text>
-              <View style={styles.presetRow}>
+              <Text style={styles.cycleText}>{completedCycles} ciclo{completedCycles === 1 ? "" : "s"} concluído{completedCycles === 1 ? "" : "s"}</Text>
+              {phase === "focus" ? <View style={styles.presetRow}>
                 {[15, 25, 45, 60].map((minutes) => <ModeButton key={minutes} label={`${minutes} min`} active={timerMinutes === minutes} onPress={() => selectTimer(minutes)} />)}
-              </View>
-              <Pressable onPress={toggleTimer} style={styles.primaryButton}><Text style={styles.primaryButtonText}>{running ? "Pausar" : elapsedSeconds > 0 ? "Continuar" : "Iniciar foco"}</Text></Pressable>
+              </View> : null}
+              <Pressable onPress={toggleTimer} style={[styles.primaryButton, phase === "break" && styles.breakButton]}><Text style={styles.primaryButtonText}>{running ? "Pausar" : elapsedSeconds > 0 ? "Continuar" : phase === "focus" ? "Iniciar foco" : "Iniciar pausa"}</Text></Pressable>
+              {phase === "break" ? <Pressable onPress={skipBreak} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Pular pausa</Text></Pressable> : null}
               <Pressable onPress={resetTimer} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Reiniciar cronômetro</Text></Pressable>
             </View>
           ) : (
@@ -175,8 +210,10 @@ const styles = {
   timerCard: { backgroundColor: "#161625", borderRadius: 20, padding: 20, alignItems: "center", borderWidth: 1, borderColor: "#342765" },
   timerEyebrow: { color: "#A991FF", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   timer: { color: "white", fontSize: 58, fontWeight: "800", marginVertical: 15 },
+  cycleText: { color: "#BBB", fontWeight: "700", marginBottom: 14 },
   presetRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   primaryButton: { alignSelf: "stretch", backgroundColor: "#7C4DFF", padding: 15, borderRadius: 12, marginTop: 10 },
+  breakButton: { backgroundColor: "#007D4A" },
   primaryButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   secondaryButton: { padding: 12, marginTop: 4 },
   secondaryButtonText: { color: "#9C8DCB", fontWeight: "700" },
