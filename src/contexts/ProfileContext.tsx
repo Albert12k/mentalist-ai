@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { getProfile, saveProfile } from "../services/profileStorage";
 import { defaultUserProfile, UserProfile } from "../types/Profile";
 import { useAuth } from "./AuthContext";
+import { loadCloudProfile, saveCloudProfile } from "../services/cloudSync";
 
 type ProfileContextType = {
   profile: UserProfile;
@@ -19,7 +20,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadProfile() {
       if (!userId) { setProfile(defaultUserProfile); return; }
-      setProfile(await getProfile(userId, displayName));
+      const localProfile = await getProfile(userId, displayName);
+      const cloudProfile = await loadCloudProfile(userId);
+      const profileToUse = cloudProfile ?? localProfile;
+      setProfile(profileToUse);
+
+      // Uma conta que já tinha dados locais é enviada ao banco na primeira vez
+      // que entra, sem substituir dados que já existam na nuvem.
+      if (!cloudProfile) void saveCloudProfile(userId, profileToUse);
     }
 
     loadProfile();
@@ -28,6 +36,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = useCallback((updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
     if (userId) void saveProfile(userId, updatedProfile);
+    if (userId) void saveCloudProfile(userId, updatedProfile);
   }, [userId]);
 
   // Centralizamos o resgate aqui para impedir que uma mesma recompensa seja
@@ -43,6 +52,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       };
 
       if (userId) void saveProfile(userId, updatedProfile);
+      if (userId) void saveCloudProfile(userId, updatedProfile);
       return updatedProfile;
     });
   }, [userId]);

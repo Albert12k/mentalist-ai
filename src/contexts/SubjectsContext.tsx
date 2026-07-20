@@ -4,6 +4,7 @@ import { useAuth } from "./AuthContext";
 import { hydrateMaterialForPlatform } from "../services/materials";
 import { getSubjects, saveSubjects } from "../services/subjectsStorage";
 import { Subject } from "../types/Subject";
+import { loadCloudSubjects, saveCloudSubjects } from "../services/cloudSync";
 
 type SubjectsContextType = {
   subjects: Subject[];
@@ -29,18 +30,25 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       if (!userId) { if (active) setSubjects([]); return; }
-      const saved = await getSubjects(userId);
+      const localSubjects = await getSubjects(userId);
+      const cloudSubjects = await loadCloudSubjects(userId);
+      const saved = cloudSubjects ?? localSubjects;
       const hydrated = await Promise.all(saved.map(async (subject) => {
         const normalized = normalizeSubject(subject);
         return { ...normalized, materials: await Promise.all(normalized.materials.map(hydrateMaterialForPlatform)) };
       }));
       if (active) setSubjects(hydrated);
+      if (!cloudSubjects) void saveCloudSubjects(userId, saved);
     }
     void load();
     return () => { active = false; };
   }, [userId]);
 
-  const persist = useCallback((updated: Subject[]) => { if (userId) void saveSubjects(userId, updated); }, [userId]);
+  const persist = useCallback((updated: Subject[]) => {
+    if (!userId) return;
+    void saveSubjects(userId, updated);
+    void saveCloudSubjects(userId, updated);
+  }, [userId]);
   const addSubject = useCallback((subject: Subject) => setSubjects((current) => { const updated = [...current, subject]; persist(updated); return updated; }), [persist]);
   const updateSubjects = useCallback((updated: Subject[]) => { setSubjects(updated); persist(updated); }, [persist]);
   const removeSubject = useCallback((id: string) => setSubjects((current) => { const updated = current.filter((subject) => subject.id !== id); persist(updated); return updated; }), [persist]);
