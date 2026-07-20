@@ -1,4 +1,4 @@
-import { Subject } from "../types/Subject";
+import { Subject, SubjectFlashcard, SubjectQuiz, SubjectQuizQuestion } from "../types/Subject";
 import { supabase } from "./supabase";
 
 type AiTutorResult = { answer?: string; error?: string };
@@ -27,4 +27,25 @@ export async function askAiTutor(question: string, subjects: Subject[]): Promise
   });
   if (error) return { error: "Não foi possível acessar a IA agora. Verifique sua conexão e tente novamente." };
   return data ?? { error: "A IA não retornou uma resposta." };
+}
+
+async function askAssessment(mode: "quiz" | "flashcards", subject: Subject): Promise<string | undefined> {
+  if (!supabase) return undefined;
+  const { data } = await supabase.functions.invoke<AiTutorResult>("mentalis-ai", { body: { mode, question: `Gere material de revisão para ${subject.name}.`, studyContext: buildStudyContext([subject]) } });
+  return data?.answer;
+}
+
+export async function generateAiQuiz(subject: Subject): Promise<SubjectQuiz | null> {
+  try {
+    const parsed = JSON.parse((await askAssessment("quiz", subject)) ?? "{}") as { questions?: Array<Omit<SubjectQuizQuestion, "id">> };
+    const questions = parsed.questions?.filter((item) => item.question && item.options?.length === 4 && Number.isInteger(item.correctOptionIndex) && item.correctOptionIndex >= 0 && item.correctOptionIndex < 4).map((item) => ({ ...item, id: `quiz-question-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }));
+    return questions?.length ? { id: `quiz-ai-${Date.now()}`, title: `Quiz IA: ${subject.name}`, questions, createdAt: new Date().toISOString(), sourceContentIds: subject.contents.map((content) => content.id) } : null;
+  } catch { return null; }
+}
+
+export async function generateAiFlashcards(subject: Subject): Promise<SubjectFlashcard[]> {
+  try {
+    const parsed = JSON.parse((await askAssessment("flashcards", subject)) ?? "{}") as { flashcards?: Array<{ question?: string; answer?: string }> };
+    return (parsed.flashcards ?? []).filter((item) => item.question && item.answer).map((item) => ({ id: `flashcard-ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, question: item.question!, answer: item.answer!, createdAt: new Date().toISOString(), reviewCount: 0, nextReviewAt: new Date().toISOString() }));
+  } catch { return []; }
 }

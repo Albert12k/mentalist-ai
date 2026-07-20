@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type RequestBody = { question?: string; studyContext?: string };
+type RequestBody = { question?: string; studyContext?: string; mode?: "tutor" | "quiz" | "flashcards" };
 
 function getOutputText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
   return response.output?.flatMap((item) => item.content ?? [])
@@ -23,7 +23,7 @@ Deno.serve(async (request) => {
   if (!apiKey) return Response.json({ error: "A chave da IA ainda não foi configurada no Supabase." }, { status: 503, headers: corsHeaders });
 
   try {
-    const { question, studyContext } = await request.json() as RequestBody;
+    const { question, studyContext, mode = "tutor" } = await request.json() as RequestBody;
     const safeQuestion = question?.trim().slice(0, 2_000);
     if (!safeQuestion) return Response.json({ error: "Escreva uma pergunta para o tutor." }, { status: 400, headers: corsHeaders });
 
@@ -35,7 +35,11 @@ Deno.serve(async (request) => {
       body: JSON.stringify({
         model: Deno.env.get("OPENAI_MODEL") || "gpt-5-mini",
         reasoning: { effort: "low" },
-        instructions: "Você é o Tutor do Mentalis, um app de estudos em português do Brasil. Responda de forma acolhedora, objetiva e prática. Use somente o contexto fornecido para afirmações sobre matérias, prazos e progresso. Se faltar informação, diga claramente e proponha um próximo passo. Não invente fontes, conteúdo de arquivos ou datas. Use parágrafos curtos e, quando ajudar, uma pequena lista.",
+        instructions: mode === "tutor"
+          ? "Você é o Tutor do Mentalis, um app de estudos em português do Brasil. Responda de forma acolhedora, objetiva e prática. Use somente o contexto fornecido para afirmações sobre matérias, prazos e progresso. Se faltar informação, diga claramente e proponha um próximo passo. Não invente fontes, conteúdo de arquivos ou datas."
+          : mode === "quiz"
+            ? "Crie um quiz somente com base no conteúdo fornecido. Responda APENAS JSON válido no formato {\"questions\":[{\"question\":string,\"options\":[string,string,string,string],\"correctOptionIndex\":0}]} com 3 a 8 perguntas. Não invente fatos."
+            : "Crie flashcards somente com base no conteúdo fornecido. Responda APENAS JSON válido no formato {\"flashcards\":[{\"question\":string,\"answer\":string}]} com 3 a 10 cartões. Não invente fatos.",
         input: `Contexto de estudo do aluno:\n${safeContext}\n\nPergunta do aluno:\n${safeQuestion}`,
       }),
     });
