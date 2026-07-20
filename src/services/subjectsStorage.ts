@@ -3,12 +3,16 @@ import { Subject } from "../types/Subject";
 
 const KEY = "@mentalis:subjects";
 
+function getKey(userId: string) {
+  return `${KEY}:${userId}`;
+}
+
 /**
  * Salvar lista de matérias
  */
-export async function saveSubjects(subjects: Subject[]) {
+export async function saveSubjects(userId: string, subjects: Subject[]) {
   try {
-    await AsyncStorage.setItem(KEY, JSON.stringify(subjects));
+    await AsyncStorage.setItem(getKey(userId), JSON.stringify(subjects));
   } catch (error) {
     console.log("Erro ao salvar matérias:", error);
   }
@@ -17,9 +21,9 @@ export async function saveSubjects(subjects: Subject[]) {
 /**
  * Carregar matérias salvas
  */
-export async function getSubjects(): Promise<Subject[]> {
+export async function getSubjects(userId: string): Promise<Subject[]> {
   try {
-    const data = await AsyncStorage.getItem(KEY);
+    const data = await AsyncStorage.getItem(getKey(userId));
 
     if (!data) return [];
 

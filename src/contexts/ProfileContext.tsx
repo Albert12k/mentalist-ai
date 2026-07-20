@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 import { getProfile, saveProfile } from "../services/profileStorage";
 import { defaultUserProfile, UserProfile } from "../types/Profile";
+import { useAuth } from "./AuthContext";
 
 type ProfileContextType = {
   profile: UserProfile;
@@ -12,20 +13,22 @@ type ProfileContextType = {
 const ProfileContext = createContext<ProfileContextType | null>(null);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
+  const { userId, displayName } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
 
   useEffect(() => {
     async function loadProfile() {
-      setProfile(await getProfile());
+      if (!userId) { setProfile(defaultUserProfile); return; }
+      setProfile(await getProfile(userId, displayName));
     }
 
     loadProfile();
-  }, []);
+  }, [userId, displayName]);
 
   const updateProfile = useCallback((updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
-    saveProfile(updatedProfile);
-  }, []);
+    if (userId) void saveProfile(userId, updatedProfile);
+  }, [userId]);
 
   // Centralizamos o resgate aqui para impedir que uma mesma recompensa seja
   // adicionada duas vezes por telas diferentes.
@@ -39,10 +42,10 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         claimedChallengeIds: [...currentProfile.claimedChallengeIds, challengeId],
       };
 
-      saveProfile(updatedProfile);
+      if (userId) void saveProfile(userId, updatedProfile);
       return updatedProfile;
     });
-  }, []);
+  }, [userId]);
 
   return (
     <ProfileContext.Provider value={{ profile, updateProfile, claimChallenge }}>

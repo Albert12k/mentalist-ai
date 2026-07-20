@@ -8,6 +8,8 @@ import { supabase } from "../services/supabase";
 type AuthContextType = {
   loading: boolean;
   signedIn: boolean;
+  userId: string | null;
+  displayName: string | undefined;
   continueInPreview: () => Promise<void>;
   signOutPreview: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -25,15 +27,23 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | undefined>();
+
+  function applySession(session: { user: { id: string; user_metadata?: { name?: unknown } } } | null) {
+    setSignedIn(Boolean(session));
+    setUserId(session?.user.id ?? null);
+    setDisplayName(typeof session?.user.user_metadata?.name === "string" ? session.user.user_metadata.name : undefined);
+  }
 
   useEffect(() => {
     if (isAuthConfigured && supabase) {
       supabase.auth.getSession()
-        .then(({ data }) => setSignedIn(Boolean(data.session)))
+        .then(({ data }) => applySession(data.session))
         .finally(() => setLoading(false));
 
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSignedIn(Boolean(session));
+        applySession(session);
         setLoading(false);
       });
       return () => subscription.subscription.unsubscribe();
@@ -47,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function continueInPreview() {
     await AsyncStorage.setItem(SESSION_KEY, "true");
     setSignedIn(true);
+    setUserId("preview-user");
   }
 
   async function signOutPreview() {
@@ -56,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await AsyncStorage.removeItem(SESSION_KEY);
     setSignedIn(false);
+    setUserId(null);
   }
 
   async function signIn(email: string, password: string) {
@@ -105,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error?.message ?? null;
   }
 
-  return <AuthContext.Provider value={{ loading, signedIn, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
 }
 
 function getWebRedirectUrl(): string | undefined {
