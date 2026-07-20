@@ -43,7 +43,8 @@
           "color": "#7C4DFF",
           "defaultChannel": "activity-reminders"
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

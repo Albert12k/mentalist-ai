@@ -7,7 +7,7 @@ import { isAuthConfigured } from "../services/authConfig";
 type ViewMode = "splash" | "login" | "signup" | "forgot";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const { loading, signedIn, continueInPreview } = useAuth();
+  const { loading, signedIn, continueInPreview, signIn, signUp, resetPassword } = useAuth();
   const [view, setView] = useState<ViewMode>("splash");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,12 +34,25 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   async function handleSubmit() {
     if (!validateFields(view === "signup")) return;
     if (view === "forgot") {
-      Alert.alert("Recuperação preparada", isAuthConfigured ? "O link de recuperação será enviado para seu e-mail." : "A tela está pronta. O envio de e-mail será ativado ao conectar o Supabase.");
-      setView("login");
+      const error = await resetPassword(email);
+      if (error) Alert.alert("Não foi possível enviar", error);
+      else {
+        Alert.alert("Verifique seu e-mail", "Enviamos um link para você criar uma nova senha.");
+        setView("login");
+      }
       return;
     }
-    // Sem chave, a tela funciona como prévia. Não salvamos senhas localmente.
-    await continueInPreview();
+    if (view === "signup") {
+      const result = await signUp(email, password, name.trim());
+      if (result.error) Alert.alert("Não foi possível criar", result.error);
+      else if (result.needsConfirmation) {
+        Alert.alert("Confirme seu e-mail", "Enviamos um link de confirmação. Depois, volte e entre na sua conta.");
+        setView("login");
+      }
+      return;
+    }
+    const error = await signIn(email, password);
+    if (error) Alert.alert("Não foi possível entrar", error);
   }
 
   const content = view === "signup"

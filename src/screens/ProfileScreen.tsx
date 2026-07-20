@@ -14,6 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 
 import ProgressBar from "../components/ProgressBar";
 import { useProfile } from "../contexts/ProfileContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 
@@ -47,6 +48,7 @@ function calculateStreak(studyDates: Date[]): number {
 export default function ProfileScreen() {
   const { subjects } = useSubjects();
   const { profile, updateProfile } = useProfile();
+  const { signOutPreview } = useAuth();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [goalInput, setGoalInput] = useState(String(profile.weeklyGoalMinutes));
@@ -158,6 +160,8 @@ export default function ProfileScreen() {
             Você já acumulou {profile.bonusXP} XP em recompensas. Continue concluindo desafios para evoluir mais rápido.
           </Text>
         </View>
+
+        <Pressable onPress={signOutPreview} style={styles.signOutButton}><Text style={styles.signOutText}>Sair da conta</Text></Pressable>
       </ScrollView>
 
       <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
@@ -219,4 +223,6 @@ const styles = {
   achievementCard: { backgroundColor: "#2A2410", borderWidth: 1, borderColor: "#685316", borderRadius: 16, padding: 16, marginTop: 12 },
   achievementValue: { color: "#FFD54F", fontSize: 20, fontWeight: "700", marginTop: 10 },
   achievementDescription: { color: "#D8C78E", marginTop: 8, lineHeight: 20 },
+  signOutButton: { padding: 15, marginTop: 12 },
+  signOutText: { color: "#FF9A9A", textAlign: "center", fontWeight: "700" },
 } as const;

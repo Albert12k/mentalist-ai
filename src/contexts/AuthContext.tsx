@@ -1,11 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { isAuthConfigured } from "../services/authConfig";
+import { supabase } from "../services/supabase";
+
 type AuthContextType = {
   loading: boolean;
   signedIn: boolean;
   continueInPreview: () => Promise<void>;
   signOutPreview: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<string | null>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+  resetPassword: (email: string) => Promise<string | null>;
 };
 
 const SESSION_KEY = "@mentalis:preview-session";
@@ -18,6 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    if (isAuthConfigured && supabase) {
+      supabase.auth.getSession()
+        .then(({ data }) => setSignedIn(Boolean(data.session)))
+        .finally(() => setLoading(false));
+
+      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSignedIn(Boolean(session));
+        setLoading(false);
+      });
+      return () => subscription.subscription.unsubscribe();
+    }
+
     AsyncStorage.getItem(SESSION_KEY)
       .then((value) => setSignedIn(value === "true"))
       .finally(() => setLoading(false));
@@ -29,11 +47,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOutPreview() {
+    if (isAuthConfigured && supabase) {
+      await supabase.auth.signOut();
+      return;
+    }
     await AsyncStorage.removeItem(SESSION_KEY);
     setSignedIn(false);
   }
 
-  return <AuthContext.Provider value={{ loading, signedIn, continueInPreview, signOutPreview }}>{children}</AuthContext.Provider>;
+  async function signIn(email: string, password: string) {
+    if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  }
+
+  async function signUp(email: string, password: string, name: string) {
+    if (!supabase) return { error: "A conexão com o Supabase ainda não foi configurada.", needsConfirmation: false };
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    return { error: error?.message ?? null, needsConfirmation: !data.session };
+  }
+
+  async function resetPassword(email: string) {
+    if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    return error?.message ?? null;
+  }
+
+  return <AuthContext.Provider value={{ loading, signedIn, continueInPreview, signOutPreview, signIn, signUp, resetPassword }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
