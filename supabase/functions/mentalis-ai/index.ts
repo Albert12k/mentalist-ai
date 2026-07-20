@@ -77,6 +77,7 @@ Deno.serve(async (request) => {
     return Response.json({ answer }, { headers: corsHeaders });
   } catch (error) {
     console.error("mentalis-ai error", error);
-    return Response.json({ error: "Não foi possível conversar com a IA agora." }, { status: 500, headers: corsHeaders });
+    const detail = error instanceof Error ? error.message : "Erro desconhecido";
+    return Response.json({ error: `Falha no servidor de IA: ${detail}` }, { status: 500, headers: corsHeaders });
   }
 });
