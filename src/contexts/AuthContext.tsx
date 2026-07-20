@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 
 import { isAuthConfigured } from "../services/authConfig";
 import { supabase } from "../services/supabase";
@@ -12,6 +13,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<string | null>;
+  resendConfirmation: (email: string) => Promise<string | null>;
+  signInWithGoogle: () => Promise<string | null>;
 };
 
 const SESSION_KEY = "@mentalis:preview-session";
@@ -66,18 +69,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { data: { name }, emailRedirectTo: getWebRedirectUrl() },
     });
     return { error: error?.message ?? null, needsConfirmation: !data.session };
   }
 
   async function resetPassword(email: string) {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: getWebRedirectUrl() });
     return error?.message ?? null;
   }
 
-  return <AuthContext.Provider value={{ loading, signedIn, continueInPreview, signOutPreview, signIn, signUp, resetPassword }}>{children}</AuthContext.Provider>;
+  async function resendConfirmation(email: string) {
+    if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: getWebRedirectUrl() } });
+    return error?.message ?? null;
+  }
+
+  async function signInWithGoogle() {
+    if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: getWebRedirectUrl() } });
+    return error?.message ?? null;
+  }
+
+  return <AuthContext.Provider value={{ loading, signedIn, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
+}
+
+function getWebRedirectUrl(): string | undefined {
+  return Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : undefined;
 }
 
 export function useAuth() {

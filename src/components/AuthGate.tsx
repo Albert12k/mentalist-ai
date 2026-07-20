@@ -4,14 +4,16 @@ import { Alert, Pressable, SafeAreaView, Text, TextInput, View } from "react-nat
 import { useAuth } from "../contexts/AuthContext";
 import { isAuthConfigured } from "../services/authConfig";
 
-type ViewMode = "splash" | "login" | "signup" | "forgot";
+type ViewMode = "splash" | "login" | "signup" | "forgot" | "confirm";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const { loading, signedIn, continueInPreview, signIn, signUp, resetPassword } = useAuth();
+  const { loading, signedIn, continueInPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle } = useAuth();
   const [view, setView] = useState<ViewMode>("splash");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (loading || signedIn) return;
@@ -38,6 +40,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   async function handleSubmit() {
     if (!validateFields(view === "signup")) return;
+    setSubmitting(true);
     if (view === "forgot") {
       const error = await resetPassword(email);
       if (error) Alert.alert("Não foi possível enviar", error);
@@ -45,19 +48,50 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         Alert.alert("Verifique seu e-mail", "Enviamos um link para você criar uma nova senha.");
         setView("login");
       }
+      setSubmitting(false);
       return;
     }
     if (view === "signup") {
       const result = await signUp(email, password, name.trim());
       if (result.error) Alert.alert("Não foi possível criar", result.error);
       else if (result.needsConfirmation) {
-        Alert.alert("Confirme seu e-mail", "Enviamos um link de confirmação. Depois, volte e entre na sua conta.");
-        setView("login");
+        setConfirmationEmail(email);
+        setView("confirm");
       }
+      setSubmitting(false);
       return;
     }
     const error = await signIn(email, password);
     if (error) Alert.alert("Não foi possível entrar", error);
+    setSubmitting(false);
+  }
+
+  async function handleGoogle() {
+    setSubmitting(true);
+    const error = await signInWithGoogle();
+    setSubmitting(false);
+    if (error) Alert.alert("Google ainda não está pronto", "Ative o provedor Google no Supabase e configure as credenciais do Google Cloud. Detalhe: " + error);
+  }
+
+  async function handleResend() {
+    setSubmitting(true);
+    const error = await resendConfirmation(confirmationEmail);
+    setSubmitting(false);
+    Alert.alert(error ? "Não foi possível reenviar" : "E-mail reenviado", error ?? "Confira sua caixa de entrada e a pasta de spam.");
+  }
+
+  if (view === "confirm") {
+    return (
+      <SafeAreaView style={styles.safeArea}><View style={styles.content}>
+        <Text style={styles.brandSmall}>MENTALIS</Text>
+        <Text style={styles.title}>Confirme seu e-mail</Text>
+        <Text style={styles.subtitle}>Enviamos um link de confirmação para:</Text>
+        <Text style={styles.confirmEmail}>{confirmationEmail}</Text>
+        <View style={styles.confirmCard}><Text style={styles.confirmTitle}>Cadastro recebido</Text><Text style={styles.confirmText}>Se o e-mail não chegar em alguns minutos, confira o spam ou peça um novo envio.</Text></View>
+        <Pressable disabled={submitting} onPress={handleResend} style={styles.mainButton}><Text style={styles.mainButtonText}>{submitting ? "Enviando..." : "Reenviar e-mail"}</Text></Pressable>
+        <Pressable onPress={() => setView("login")} style={styles.alternateButton}><Text style={styles.alternateText}>Já confirmei, entrar</Text></Pressable>
+      </View></SafeAreaView>
+    );
   }
 
   const content = view === "signup"
@@ -77,7 +111,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         <TextInput value={email} onChangeText={setEmail} placeholder="E-mail" placeholderTextColor="#77778E" keyboardType="email-address" autoCapitalize="none" style={styles.input} />
         {view !== "forgot" ? <TextInput value={password} onChangeText={setPassword} placeholder="Senha" placeholderTextColor="#77778E" secureTextEntry style={styles.input} /> : null}
         {view === "login" ? <Pressable onPress={() => setView("forgot")}><Text style={styles.forgot}>Esqueci minha senha</Text></Pressable> : null}
-        <Pressable onPress={handleSubmit} style={styles.mainButton}><Text style={styles.mainButtonText}>{content.button}</Text></Pressable>
+        {view !== "forgot" ? <Pressable disabled={submitting} onPress={handleGoogle} style={styles.googleButton}><Text style={styles.googleText}>Continuar com Google</Text></Pressable> : null}
+        {view !== "forgot" ? <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>ou</Text><View style={styles.dividerLine} /></View> : null}
+        <Pressable disabled={submitting} onPress={handleSubmit} style={[styles.mainButton, submitting && styles.disabledButton]}><Text style={styles.mainButtonText}>{submitting ? "Aguarde..." : content.button}</Text></Pressable>
         <Pressable onPress={() => setView(content.alternateView)} style={styles.alternateButton}><Text style={styles.alternateText}>{content.alternate}</Text></Pressable>
         {!isAuthConfigured ? <Pressable onPress={continueInPreview} style={styles.previewButton}><Text style={styles.previewText}>Continuar sem conta por enquanto</Text></Pressable> : null}
       </View>
@@ -104,4 +140,14 @@ const styles = {
   alternateText: { color: "#CFC8EE", fontWeight: "700", textAlign: "center" },
   previewButton: { padding: 13, marginTop: 3 },
   previewText: { color: "#8888AA", textAlign: "center", fontSize: 12 },
+  googleButton: { borderWidth: 1, borderColor: "#4A4860", backgroundColor: "#161625", borderRadius: 12, padding: 15, marginTop: 24 },
+  googleText: { color: "white", fontWeight: "800", textAlign: "center" },
+  divider: { flexDirection: "row", alignItems: "center", marginTop: 17 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#323144" },
+  dividerText: { color: "#77778E", marginHorizontal: 10, fontSize: 12 },
+  disabledButton: { opacity: 0.65 },
+  confirmEmail: { color: "#CFC2FF", fontWeight: "800", marginTop: 7 },
+  confirmCard: { backgroundColor: "#172A25", borderWidth: 1, borderColor: "#285F4B", borderRadius: 14, padding: 15, marginTop: 24 },
+  confirmTitle: { color: "#86E4B4", fontWeight: "800" },
+  confirmText: { color: "#B8D9C9", marginTop: 6, lineHeight: 20 },
 } as const;

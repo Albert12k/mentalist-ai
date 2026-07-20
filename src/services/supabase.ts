@@ -1,6 +1,7 @@
 import "react-native-url-polyfill/auto";
 import "expo-sqlite/localStorage/install";
 import { createClient } from "@supabase/supabase-js";
+import { Platform } from "react-native";
 
 import { authConfig, isAuthConfigured } from "./authConfig";
 
@@ -12,7 +13,9 @@ export const supabase = isAuthConfigured
       storage: localStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // Na web, Supabase retorna da confirmação de e-mail e do Google pela URL.
+      // No app nativo, o deep link será configurado antes do lançamento mobile.
+      detectSessionInUrl: Platform.OS === "web",
     },
   })
   : null;
