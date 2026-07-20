@@ -38,6 +38,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthConfigured && supabase) {
+      // Uma conexão lenta ou uma sessão local corrompida não pode prender o
+      // aplicativo eternamente na splash. Depois de 4 segundos liberamos a
+      // tela de acesso; se a sessão responder depois, ela ainda será aplicada.
+      const timeout = setTimeout(() => setLoading(false), 4000);
       supabase.auth.getSession()
         .then(({ data }) => applySession(data.session))
         .finally(() => setLoading(false));
@@ -46,7 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         applySession(session);
         setLoading(false);
       });
-      return () => subscription.subscription.unsubscribe();
+      return () => {
+        clearTimeout(timeout);
+        subscription.subscription.unsubscribe();
+      };
     }
 
     AsyncStorage.getItem(SESSION_KEY)
