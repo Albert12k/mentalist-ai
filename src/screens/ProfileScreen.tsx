@@ -18,6 +18,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { uploadUserAsset } from "../services/cloudStorage";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
+import { getPlanDefinition, planDefinitions } from "../services/plans";
 
 function getDayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -53,6 +54,7 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [goalInput, setGoalInput] = useState(String(profile.weeklyGoalMinutes));
+  const [plansVisible, setPlansVisible] = useState(false);
 
   const studySessions = subjects.flatMap((subject) => subject.studyHistory);
   const totalMinutes = studySessions.reduce((total, session) => total + session.duration, 0);
@@ -70,6 +72,7 @@ export default function ProfileScreen() {
   ), 0);
   const totalContents = subjects.reduce((total, subject) => total + subject.contents.length, 0);
   const initial = profile.name.trim().charAt(0).toUpperCase() || "E";
+  const currentPlan = getPlanDefinition(profile);
 
   async function pickAvatar() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
@@ -136,6 +139,19 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
+        <View style={styles.planCard}>
+          <View style={styles.cardHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.planEyebrow}>SEU PLANO</Text>
+              <Text style={styles.cardTitle}>{currentPlan.name}</Text>
+            </View>
+            <Text style={styles.planBadge}>{profile.plan === "pro" ? "PRO" : "FREE"}</Text>
+          </View>
+          <Text style={styles.cardDescription}>{currentPlan.description}</Text>
+          <Text style={styles.planLimit}>{currentPlan.storageMb >= 1000 ? `${currentPlan.storageMb / 1000} GB` : `${currentPlan.storageMb} MB`} de armazenamento</Text>
+          <Pressable onPress={() => setPlansVisible(true)} style={styles.planButton}><Text style={styles.saveButtonText}>Conhecer o Mentalis Pro</Text></Pressable>
+        </View>
+
         <View style={styles.metricsGrid}>
           <Metric label="Sequência" value={`${streak} dia${streak === 1 ? "" : "s"}`} />
           <Metric label="Sessões" value={String(studySessions.length)} />
@@ -184,12 +200,25 @@ export default function ProfileScreen() {
           <Pressable onPress={() => setEditing(false)} style={styles.cancelButton}><Text style={styles.cancelButtonText}>Cancelar</Text></Pressable>
         </SafeAreaView>
       </Modal>
+      <Modal visible={plansVisible} animationType="slide" onRequestClose={() => setPlansVisible(false)}>
+        <SafeAreaView style={styles.modalSafeArea}>
+          <Text style={styles.modalTitle}>Escolha seu plano</Text>
+          <Text style={styles.cardDescription}>A assinatura ainda não está disponível. Esta tela já deixa a estrutura pronta para a próxima etapa.</Text>
+          <PlanOption title={planDefinitions.free.name} description="Matérias, agenda, faltas, progresso, desafios e ferramentas locais." active={profile.plan === "free"} />
+          <PlanOption title={planDefinitions.pro.name} description="Tutor IA, leitura de materiais, resumos, quizzes, flashcards e relatórios avançados." active={profile.plan === "pro"} />
+          <Pressable onPress={() => setPlansVisible(false)} style={styles.cancelButton}><Text style={styles.cancelButtonText}>Voltar ao perfil</Text></Pressable>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <View style={styles.metricCard}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>;
+}
+
+function PlanOption({ title, description, active }: { title: string; description: string; active: boolean }) {
+  return <View style={[styles.planOption, active && styles.planOptionActive]}><Text style={styles.cardTitle}>{title}</Text><Text style={styles.cardDescription}>{description}</Text>{active ? <Text style={styles.currentPlanText}>Plano atual</Text> : null}</View>;
 }
 
 const styles = {
@@ -209,6 +238,14 @@ const styles = {
   levelFill: { height: "100%", backgroundColor: "#B9A8FF", borderRadius: 4 },
   levelHint: { color: "#D2C8FF", marginTop: 7, fontSize: 12 },
   goalCard: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginBottom: 16 },
+  planCard: { backgroundColor: "#211943", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#5E46A8" },
+  planEyebrow: { color: "#B9A8FF", fontSize: 11, fontWeight: "800", letterSpacing: 1, marginBottom: 5 },
+  planBadge: { color: "#FFF", backgroundColor: "#6741D9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, fontWeight: "800" },
+  planLimit: { color: "#D2C8FF", marginTop: 12, fontWeight: "700" },
+  planButton: { backgroundColor: "#7C4DFF", padding: 13, borderRadius: 12, marginTop: 16 },
+  planOption: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: "#292940" },
+  planOptionActive: { borderColor: "#7C4DFF" },
+  currentPlanText: { color: "#65D6A3", fontWeight: "800", marginTop: 12 },
   card: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginTop: 6 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitle: { color: "white", fontSize: 17, fontWeight: "700" },

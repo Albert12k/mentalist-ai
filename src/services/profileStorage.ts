@@ -24,6 +24,8 @@ export async function getProfile(userId: string, defaultName?: string): Promise<
       claimedChallengeIds: Array.isArray(savedProfile.claimedChallengeIds)
         ? savedProfile.claimedChallengeIds.filter((id): id is string => typeof id === "string")
         : [],
+      plan: savedProfile.plan === "pro" ? "pro" : "free",
+      subscriptionStatus: savedProfile.subscriptionStatus ?? "inactive",
     };
   } catch (error) {
     console.log("Erro ao carregar perfil:", error);

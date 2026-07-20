@@ -10,6 +10,11 @@ export type UserProfile = {
   // entram no XP total do usuário.
   bonusXP: number;
   claimedChallengeIds: string[];
+
+  // A assinatura fica no perfil desde já. A cobrança será conectada depois,
+  // sem precisar mudar as telas e regras que consultam o plano atual.
+  plan: "free" | "pro";
+  subscriptionStatus?: "active" | "inactive" | "canceled";
 };
 
 export const defaultUserProfile: UserProfile = {
@@ -17,4 +22,6 @@ export const defaultUserProfile: UserProfile = {
   weeklyGoalMinutes: 180,
   bonusXP: 0,
   claimedChallengeIds: [],
+  plan: "free",
+  subscriptionStatus: "inactive",
 };

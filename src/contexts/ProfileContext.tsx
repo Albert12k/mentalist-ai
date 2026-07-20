@@ -14,6 +14,15 @@ type ProfileContextType = {
 
 const ProfileContext = createContext<ProfileContextType | null>(null);
 
+function normalizeProfile(profile: UserProfile): UserProfile {
+  return {
+    ...defaultUserProfile,
+    ...profile,
+    claimedChallengeIds: profile.claimedChallengeIds ?? [],
+    plan: profile.plan ?? "free",
+  };
+}
+
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { userId, displayName } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
@@ -23,7 +32,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (!userId) { setProfile(defaultUserProfile); return; }
       const localProfile = await getProfile(userId, displayName);
       const cloudProfile = await loadCloudProfile(userId);
-      const profileToUse = cloudProfile ?? localProfile;
+      const profileToUse = normalizeProfile(cloudProfile ?? localProfile);
       const cloudAvatarUrl = await getUserAssetUrl(profileToUse.avatarPath);
       if (cloudAvatarUrl) profileToUse.avatar = cloudAvatarUrl;
       setProfile(profileToUse);
