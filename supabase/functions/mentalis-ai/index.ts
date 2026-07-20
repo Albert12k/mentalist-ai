@@ -11,8 +11,9 @@ type RequestBody = { question?: string; studyContext?: string; assetUrl?: string
 
 function getOutputText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
   return response.output?.flatMap((item) => item.content ?? [])
-    .filter((content) => content.type === "output_text")
-    .map((content) => content.text ?? "").join("").trim() ?? "";
+    // Alguns retornos de arquivo usam outro tipo de bloco, mas ainda trazem
+    // o texto no mesmo campo. Aceitamos qualquer bloco textual válido.
+    .map((content) => content.text ?? "").filter(Boolean).join("").trim() ?? "";
 }
 
 Deno.serve(async (request) => {
