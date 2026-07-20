@@ -48,6 +48,12 @@ Deno.serve(async (request) => {
       const extraction = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: Deno.env.get("OPENAI_MODEL") || "gpt-5-mini", instructions: "Extraia fielmente o texto do material em português. Não resuma, não invente e preserve tópicos importantes.", input: [{ role: "user", content: [{ type: "input_file", file_id: uploadedData.id }, { type: "input_text", text: "Extraia o texto deste material." }] }] }) });
       const extractionData = await extraction.json();
       const extractedText = getOutputText(extractionData);
+      if (!extractedText) {
+        const outputKinds = Array.isArray(extractionData.output)
+          ? extractionData.output.map((item: { type?: string; content?: Array<{ type?: string }> }) => `${item.type ?? "?"}:${item.content?.map((content) => content.type ?? "?").join(",") ?? ""}`).join(" | ")
+          : "sem blocos de saída";
+        return Response.json({ error: `A IA retornou uma resposta vazia (${outputKinds}).` }, { status: 502, headers: corsHeaders });
+      }
       return Response.json({ extractedText }, { headers: corsHeaders });
     }
     const safeQuestion = question?.trim().slice(0, 2_000);
