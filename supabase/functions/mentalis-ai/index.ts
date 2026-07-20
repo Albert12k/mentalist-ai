@@ -41,12 +41,23 @@ Deno.serve(async (request) => {
         if (!transcription.ok || !transcriptionData.text) return Response.json({ error: "Não foi possível transcrever o áudio." }, { status: 502, headers: corsHeaders });
         return Response.json({ extractedText: transcriptionData.text }, { headers: corsHeaders });
       }
-      form.append("purpose", "user_data");
-      const uploaded = await fetch("https://api.openai.com/v1/files", { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
-      const uploadedData = await uploaded.json();
-      if (!uploaded.ok) return Response.json({ error: "Não foi possível preparar o material para leitura." }, { status: 502, headers: corsHeaders });
-      const extraction = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: Deno.env.get("OPENAI_MODEL") || "gpt-5-mini", instructions: "Extraia fielmente o texto do material em português. Não resuma, não invente e preserve tópicos importantes.", input: [{ role: "user", content: [{ type: "input_file", file_id: uploadedData.id }, { type: "input_text", text: "Extraia o texto deste material." }] }] }) });
+      const materialInput = mimeType.startsWith("image/")
+        ? { type: "input_image", image_url: assetUrl, detail: "high" }
+        : { type: "input_file", file_url: assetUrl, detail: "high" };
+      const extraction = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: Deno.env.get("OPENAI_FILE_MODEL") || "gpt-4.1",
+          instructions: "Extraia fielmente o texto do material em português. Não resuma, não invente e preserve tópicos importantes.",
+          input: [{ role: "user", content: [{ type: "input_text", text: "Extraia todo texto legível deste material." }, materialInput] }],
+          max_output_tokens: 8000,
+        }),
+      });
       const extractionData = await extraction.json();
+      if (!extraction.ok) {
+        return Response.json({ error: extractionData?.error?.message ?? "A OpenAI recusou o material." }, { status: 502, headers: corsHeaders });
+      }
       const extractedText = getOutputText(extractionData);
       if (!extractedText) {
         const outputKinds = Array.isArray(extractionData.output)
