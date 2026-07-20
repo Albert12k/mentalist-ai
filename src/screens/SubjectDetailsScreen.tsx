@@ -36,6 +36,7 @@ import {
   suggestMaterialCategory,
 } from "../services/materials";
 import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
+import { getUserAssetUrl } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
 import { generateAiFlashcards, generateAiQuiz } from "../services/aiTutor";
 import { generateAiSummary } from "../services/aiTutor";
@@ -312,7 +313,8 @@ export default function SubjectDetailsScreen() {
   }
 
   async function handleExtractMaterial(material: SubjectMaterial) {
-    const result = await extractMaterialText(material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
+    const freshUrl = await getUserAssetUrl(material.storagePath);
+    const result = await extractMaterialText(freshUrl ?? material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
     if (result.error) Alert.alert("Leitura com IA", result.error);
     updateSubject({ ...subject, materials: materials.map((item) => item.id === material.id ? { ...item, ...(result.text ? { extractedText: result.text, extractedAt: new Date().toISOString(), extractionError: undefined } : { extractionError: result.error ?? "A IA não retornou texto." }) } : item) });
   }
