@@ -111,8 +111,18 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         <TextInput value={email} onChangeText={setEmail} placeholder="E-mail" placeholderTextColor="#77778E" keyboardType="email-address" autoCapitalize="none" style={styles.input} />
         {view !== "forgot" ? <TextInput value={password} onChangeText={setPassword} placeholder="Senha" placeholderTextColor="#77778E" secureTextEntry style={styles.input} /> : null}
         {view === "login" ? <Pressable onPress={() => setView("forgot")}><Text style={styles.forgot}>Esqueci minha senha</Text></Pressable> : null}
-        {view !== "forgot" ? <Pressable disabled={submitting} onPress={handleGoogle} style={styles.googleButton}><Text style={styles.googleText}>Continuar com Google</Text></Pressable> : null}
-        {view !== "forgot" ? <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>ou</Text><View style={styles.dividerLine} /></View> : null}
+        {view !== "forgot" ? (
+          <View style={styles.socialArea}>
+            <Text style={styles.socialLabel}>Entrar também com</Text>
+            <View style={styles.socialRow}>
+              <Pressable disabled={submitting} onPress={handleGoogle} accessibilityLabel="Continuar com Google" style={styles.googleButton}>
+                <Text style={styles.googleIcon}>G</Text>
+              </Pressable>
+              <View style={styles.comingSoon}><Text style={styles.comingSoonText}>Mais opções em breve</Text></View>
+            </View>
+          </View>
+        ) : null}
+        {view !== "forgot" ? <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>ou use seu e-mail</Text><View style={styles.dividerLine} /></View> : null}
         <Pressable disabled={submitting} onPress={handleSubmit} style={[styles.mainButton, submitting && styles.disabledButton]}><Text style={styles.mainButtonText}>{submitting ? "Aguarde..." : content.button}</Text></Pressable>
         <Pressable onPress={() => setView(content.alternateView)} style={styles.alternateButton}><Text style={styles.alternateText}>{content.alternate}</Text></Pressable>
         {!isAuthConfigured ? <Pressable onPress={continueInPreview} style={styles.previewButton}><Text style={styles.previewText}>Continuar sem conta por enquanto</Text></Pressable> : null}
@@ -140,8 +150,13 @@ const styles = {
   alternateText: { color: "#CFC8EE", fontWeight: "700", textAlign: "center" },
   previewButton: { padding: 13, marginTop: 3 },
   previewText: { color: "#8888AA", textAlign: "center", fontSize: 12 },
-  googleButton: { borderWidth: 1, borderColor: "#4A4860", backgroundColor: "#161625", borderRadius: 12, padding: 15, marginTop: 24 },
-  googleText: { color: "white", fontWeight: "800", textAlign: "center" },
+  socialArea: { marginTop: 24 },
+  socialLabel: { color: "#AAA7B8", fontSize: 12, fontWeight: "700", marginBottom: 10 },
+  socialRow: { flexDirection: "row", alignItems: "center" },
+  googleButton: { width: 48, height: 48, borderWidth: 1, borderColor: "#58556E", backgroundColor: "white", borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  googleIcon: { color: "#4285F4", fontSize: 23, fontWeight: "900" },
+  comingSoon: { backgroundColor: "#161625", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginLeft: 9 },
+  comingSoonText: { color: "#838093", fontSize: 12, fontWeight: "700" },
   divider: { flexDirection: "row", alignItems: "center", marginTop: 17 },
   dividerLine: { flex: 1, height: 1, backgroundColor: "#323144" },
   dividerText: { color: "#77778E", marginHorizontal: 10, fontSize: 12 },

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Linking, Platform } from "react-native";
 
 import { isAuthConfigured } from "../services/authConfig";
 import { supabase } from "../services/supabase";
@@ -88,7 +88,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signInWithGoogle() {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: getWebRedirectUrl() } });
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      // Controlamos a abertura da URL abaixo para evitar que alguns navegadores
+      // bloqueiem o redirecionamento iniciado depois de uma ação assíncrona.
+      options: { redirectTo: getWebRedirectUrl(), skipBrowserRedirect: true },
+    });
+    if (!error && data.url) {
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.location.assign(data.url);
+      } else {
+        await Linking.openURL(data.url);
+      }
+    }
+    if (!error && !data.url) return "O Supabase não retornou a URL de acesso do Google.";
     return error?.message ?? null;
   }
 
