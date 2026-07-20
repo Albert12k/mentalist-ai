@@ -11,7 +11,7 @@ export const planDefinitions = {
     name: "Mentalis Free",
     description: "Organização e acompanhamento para estudar todos os dias.",
     storageMb: 100,
-    monthlyAiActions: 0,
+    monthlyAiActions: 3,
   },
   pro: {
     name: "Mentalis Pro",
@@ -32,6 +32,6 @@ export function getPlanDefinition(profile: UserProfile) {
   return planDefinitions[profile.plan ?? "free"];
 }
 
-export function canUseFeature(profile: UserProfile, feature: PlanFeature): boolean {
-  return !proFeatures.has(feature) || profile.plan === "pro";
+export function canUseFeature(profile: UserProfile, feature: PlanFeature, isAdmin = false): boolean {
+  return isAdmin || !proFeatures.has(feature) || profile.plan === "pro";
 }

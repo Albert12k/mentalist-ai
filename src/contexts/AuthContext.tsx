@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Linking, Platform } from "react-native";
+import type { Session } from "@supabase/supabase-js";
 
 import { isAuthConfigured } from "../services/authConfig";
 import { supabase } from "../services/supabase";
@@ -10,6 +11,7 @@ type AuthContextType = {
   signedIn: boolean;
   userId: string | null;
   displayName: string | undefined;
+  isAdmin: boolean;
   continueInPreview: () => Promise<void>;
   signOutPreview: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<string | null>;
@@ -29,11 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [signedIn, setSignedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | undefined>();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  function applySession(session: { user: { id: string; user_metadata?: { name?: unknown } } } | null) {
+  function applySession(session: Session | null) {
+    const appMetadata = session?.user.app_metadata as Record<string, unknown> | undefined;
     setSignedIn(Boolean(session));
     setUserId(session?.user.id ?? null);
     setDisplayName(typeof session?.user.user_metadata?.name === "string" ? session.user.user_metadata.name : undefined);
+    setIsAdmin(appMetadata?.role === "admin" || appMetadata?.is_admin === true);
   }
 
   useEffect(() => {
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(SESSION_KEY, "true");
     setSignedIn(true);
     setUserId("preview-user");
+    setIsAdmin(false);
   }
 
   async function signOutPreview() {
@@ -75,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(SESSION_KEY);
     setSignedIn(false);
     setUserId(null);
+    setIsAdmin(false);
   }
 
   async function signIn(email: string, password: string) {
@@ -124,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error?.message ?? null;
   }
 
-  return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, isAdmin, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
 }
 
 function getWebRedirectUrl(): string | undefined {

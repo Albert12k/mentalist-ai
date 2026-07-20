@@ -11,6 +11,7 @@ import {
   Image,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useNavigation } from "@react-navigation/native";
 
 import ProgressBar from "../components/ProgressBar";
 import { useProfile } from "../contexts/ProfileContext";
@@ -18,7 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { uploadUserAsset } from "../services/cloudStorage";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
-import { getPlanDefinition, planDefinitions } from "../services/plans";
+import { getPlanDefinition } from "../services/plans";
 
 function getDayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -48,13 +49,13 @@ function calculateStreak(studyDates: Date[]): number {
 // O perfil reúne os dados que ajudam a pessoa a decidir o próximo estudo, sem
 // obrigar que ela percorra todas as matérias para entender a própria evolução.
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
   const { subjects } = useSubjects();
   const { profile, updateProfile } = useProfile();
-  const { signOutPreview, userId } = useAuth();
+  const { signOutPreview, userId, isAdmin } = useAuth();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [goalInput, setGoalInput] = useState(String(profile.weeklyGoalMinutes));
-  const [plansVisible, setPlansVisible] = useState(false);
 
   const studySessions = subjects.flatMap((subject) => subject.studyHistory);
   const totalMinutes = studySessions.reduce((total, session) => total + session.duration, 0);
@@ -143,13 +144,17 @@ export default function ProfileScreen() {
           <View style={styles.cardHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.planEyebrow}>SEU PLANO</Text>
-              <Text style={styles.cardTitle}>{currentPlan.name}</Text>
+              <Text style={styles.cardTitle}>{isAdmin ? "Administrador" : currentPlan.name}</Text>
             </View>
-            <Text style={styles.planBadge}>{profile.plan === "pro" ? "PRO" : "FREE"}</Text>
+            <Text style={styles.planBadge}>{isAdmin ? "ADMIN" : profile.plan === "pro" ? "PRO" : "FREE"}</Text>
           </View>
-          <Text style={styles.cardDescription}>{currentPlan.description}</Text>
-          <Text style={styles.planLimit}>{currentPlan.storageMb >= 1000 ? `${currentPlan.storageMb / 1000} GB` : `${currentPlan.storageMb} MB`} de armazenamento</Text>
-          <Pressable onPress={() => setPlansVisible(true)} style={styles.planButton}><Text style={styles.saveButtonText}>Conhecer o Mentalis Pro</Text></Pressable>
+          <Text style={styles.cardDescription}>{isAdmin ? "Acesso completo aos recursos do Mentalis." : currentPlan.description}</Text>
+          <Text style={styles.planLimit}>
+            {isAdmin
+              ? "Recursos do app liberados sem limite de plano"
+              : `${currentPlan.storageMb >= 1000 ? `${currentPlan.storageMb / 1000} GB` : `${currentPlan.storageMb} MB`} de armazenamento`}
+          </Text>
+          <Pressable onPress={() => navigation.navigate("Plans")} style={styles.planButton}><Text style={styles.saveButtonText}>Planos e pagamento</Text></Pressable>
         </View>
 
         <View style={styles.metricsGrid}>
@@ -200,25 +205,12 @@ export default function ProfileScreen() {
           <Pressable onPress={() => setEditing(false)} style={styles.cancelButton}><Text style={styles.cancelButtonText}>Cancelar</Text></Pressable>
         </SafeAreaView>
       </Modal>
-      <Modal visible={plansVisible} animationType="slide" onRequestClose={() => setPlansVisible(false)}>
-        <SafeAreaView style={styles.modalSafeArea}>
-          <Text style={styles.modalTitle}>Escolha seu plano</Text>
-          <Text style={styles.cardDescription}>A assinatura ainda não está disponível. Esta tela já deixa a estrutura pronta para a próxima etapa.</Text>
-          <PlanOption title={planDefinitions.free.name} description="Matérias, agenda, faltas, progresso, desafios e ferramentas locais." active={profile.plan === "free"} />
-          <PlanOption title={planDefinitions.pro.name} description="Tutor IA, leitura de materiais, resumos, quizzes, flashcards e relatórios avançados." active={profile.plan === "pro"} />
-          <Pressable onPress={() => setPlansVisible(false)} style={styles.cancelButton}><Text style={styles.cancelButtonText}>Voltar ao perfil</Text></Pressable>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <View style={styles.metricCard}><Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>;
-}
-
-function PlanOption({ title, description, active }: { title: string; description: string; active: boolean }) {
-  return <View style={[styles.planOption, active && styles.planOptionActive]}><Text style={styles.cardTitle}>{title}</Text><Text style={styles.cardDescription}>{description}</Text>{active ? <Text style={styles.currentPlanText}>Plano atual</Text> : null}</View>;
 }
 
 const styles = {
@@ -243,9 +235,6 @@ const styles = {
   planBadge: { color: "#FFF", backgroundColor: "#6741D9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, fontWeight: "800" },
   planLimit: { color: "#D2C8FF", marginTop: 12, fontWeight: "700" },
   planButton: { backgroundColor: "#7C4DFF", padding: 13, borderRadius: 12, marginTop: 16 },
-  planOption: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: "#292940" },
-  planOptionActive: { borderColor: "#7C4DFF" },
-  currentPlanText: { color: "#65D6A3", fontWeight: "800", marginTop: 12 },
   card: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginTop: 6 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitle: { color: "white", fontSize: 17, fontWeight: "700" },
