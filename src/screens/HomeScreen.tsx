@@ -10,6 +10,7 @@ import { getActivityReminders, getDaysUntil } from "../services/activityReminder
 import { getDueFlashcards } from "../services/flashcardReview";
 import { generateStudyPlan, StudyRecommendation } from "../services/studyPlanner";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
+import { askAiTutor } from "../services/aiTutor";
 import { colors } from "../theme/colors";
 
 type StudyMode = "manual" | "guided" | "auto";
@@ -37,6 +38,8 @@ export default function HomeScreen() {
   const { subjects } = useSubjects();
   const { profile } = useProfile();
   const [studyMode, setStudyMode] = useState<StudyMode>("guided");
+  const [aiPlan, setAiPlan] = useState<string | null>(null);
+  const [loadingAiPlan, setLoadingAiPlan] = useState(false);
   const plan = useMemo(() => generateStudyPlan(subjects), [subjects]);
   const selectedRecommendations = studyMode === "manual" ? plan : studyMode === "guided" ? plan.slice(0, 2) : plan.slice(0, 5);
   const totalXP = getTotalXP(subjects, profile.bonusXP);
@@ -79,6 +82,14 @@ export default function HomeScreen() {
     startTraining(plan.slice(0, 1), "manual");
   }
 
+  async function explainTodayPlan() {
+    if (loadingAiPlan) return;
+    setLoadingAiPlan(true);
+    const result = await askAiTutor("Crie um plano curto para o meu estudo de hoje: diga a prioridade, o motivo e uma ação prática.", subjects);
+    setAiPlan(result.answer ?? "Não foi possível gerar o plano agora. Use a prioridade sugerida abaixo.");
+    setLoadingAiPlan(false);
+  }
+
   const primaryAction = dueFlashcards > 0
     ? { eyebrow: "REVISÃO PENDENTE", title: `${dueFlashcards} flashcard(s) para revisar`, description: "Fortaleça o que você já estudou.", button: "Começar revisão" }
     : nextEvent
@@ -105,6 +116,12 @@ export default function HomeScreen() {
           <Text style={styles.primaryDescription}>{primaryAction.description}</Text>
           <View style={styles.primaryButton}><Text style={styles.primaryButtonText}>{primaryAction.button}</Text></View>
         </Pressable>
+
+        <View style={styles.aiPlanCard}>
+          <Text style={styles.primaryEyebrow}>PLANO DE HOJE COM IA</Text>
+          <Text style={styles.aiPlanText}>{aiPlan ?? (plan[0] ? `${plan[0].subject.name}: ${plan[0].reason}` : "Adicione uma matéria para receber seu plano.")}</Text>
+          <Pressable onPress={() => void explainTodayPlan()} style={styles.aiPlanButton}><Text style={styles.primaryButtonText}>{loadingAiPlan ? "IA pensando..." : "Explicar meu plano"}</Text></Pressable>
+        </View>
 
         <View style={styles.goalCard}>
           <View style={styles.rowBetween}>
@@ -193,6 +210,9 @@ const styles = {
   dayValue: { color: "white", fontWeight: "800", fontSize: 21 },
   dayLabel: { color: "#9290A9", fontSize: 11, marginTop: 4 },
   primaryCard: { backgroundColor: "#342769", borderRadius: 18, padding: 18, marginBottom: 16 },
+  aiPlanCard: { backgroundColor: "#161625", borderRadius: 18, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: "#342769" },
+  aiPlanText: { color: "#E8E8F2", lineHeight: 21, marginTop: 8 },
+  aiPlanButton: { backgroundColor: "#5E35B1", borderRadius: 10, padding: 11, marginTop: 14, alignSelf: "flex-start" },
   primaryEyebrow: { color: "#CFC2FF", fontWeight: "800", fontSize: 11, letterSpacing: 0.5 },
   primaryTitle: { color: "white", fontWeight: "800", fontSize: 22, marginTop: 9 },
   primaryDescription: { color: "#D6CFFF", marginTop: 7, lineHeight: 20 },
