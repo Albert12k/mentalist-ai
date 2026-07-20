@@ -250,6 +250,11 @@ export type SubjectMaterial = {
   // a conta abre o aplicativo, sem precisar expor o arquivo publicamente.
   storagePath?: string;
 
+  // Texto obtido de PDF, foto ou áudio. Ele fica separado do arquivo para que
+  // resumos, quizzes e flashcards possam usar o conteúdo real da aula.
+  extractedText?: string;
+  extractedAt?: string;
+
   // Data em que o arquivo foi incluído. Ela organiza a biblioteca da matéria.
   postedAt: string;
 };

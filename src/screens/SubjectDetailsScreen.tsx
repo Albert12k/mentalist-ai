@@ -38,6 +38,7 @@ import {
 import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
 import { generateAiFlashcards, generateAiQuiz } from "../services/aiTutor";
+import { extractMaterialText } from "../services/aiTutor";
 import {
   FlashcardReviewRating,
   formatNextReview,
@@ -266,6 +267,7 @@ export default function SubjectDetailsScreen() {
 
   async function handleSaveMaterial(draft: MaterialDraft) {
     let storagePath: string | undefined;
+    let extractedText: string | undefined;
 
     // O arquivo local é mantido como reserva caso a internet falhe durante o envio.
     if (userId) {
@@ -279,6 +281,7 @@ export default function SubjectDetailsScreen() {
           draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"),
         );
         storagePath = uploaded.path;
+        if (draft.type !== "audio") extractedText = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : "image/jpeg"));
       } catch {
         Alert.alert("Salvo neste aparelho", "Não foi possível enviar este material agora. Ele continua salvo localmente.");
       }
@@ -291,6 +294,7 @@ export default function SubjectDetailsScreen() {
         {
           ...draft,
           ...(storagePath ? { storagePath } : {}),
+          ...(extractedText ? { extractedText, extractedAt: new Date().toISOString() } : {}),
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           postedAt: new Date().toISOString(),
         },

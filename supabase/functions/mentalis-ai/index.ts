@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type RequestBody = { question?: string; studyContext?: string; mode?: "tutor" | "quiz" | "flashcards" };
+type RequestBody = { question?: string; studyContext?: string; assetUrl?: string; mimeType?: string; mode?: "tutor" | "quiz" | "flashcards" | "extract" };
 
 function getOutputText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
   return response.output?.flatMap((item) => item.content ?? [])
@@ -23,7 +23,23 @@ Deno.serve(async (request) => {
   if (!apiKey) return Response.json({ error: "A chave da IA ainda não foi configurada no Supabase." }, { status: 503, headers: corsHeaders });
 
   try {
-    const { question, studyContext, mode = "tutor" } = await request.json() as RequestBody;
+    const { question, studyContext, assetUrl, mimeType, mode = "tutor" } = await request.json() as RequestBody;
+    if (mode === "extract") {
+      if (!assetUrl || !mimeType) return Response.json({ error: "Material não encontrado." }, { status: 400, headers: corsHeaders });
+      const asset = await fetch(assetUrl);
+      if (!asset.ok) return Response.json({ error: "Não foi possível acessar o material privado." }, { status: 502, headers: corsHeaders });
+      const file = new File([await asset.blob()], "material", { type: mimeType });
+      const form = new FormData();
+      form.append("file", file);
+      form.append("purpose", "user_data");
+      const uploaded = await fetch("https://api.openai.com/v1/files", { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
+      const uploadedData = await uploaded.json();
+      if (!uploaded.ok) return Response.json({ error: "Não foi possível preparar o material para leitura." }, { status: 502, headers: corsHeaders });
+      const extraction = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model: Deno.env.get("OPENAI_MODEL") || "gpt-5-mini", instructions: "Extraia fielmente o texto do material em português. Não resuma, não invente e preserve tópicos importantes.", input: [{ role: "user", content: [{ type: "input_file", file_id: uploadedData.id }, { type: "input_text", text: "Extraia o texto deste material." }] }] }) });
+      const extractionData = await extraction.json();
+      const extractedText = getOutputText(extractionData);
+      return Response.json({ extractedText }, { headers: corsHeaders });
+    }
     const safeQuestion = question?.trim().slice(0, 2_000);
     if (!safeQuestion) return Response.json({ error: "Escreva uma pergunta para o tutor." }, { status: 400, headers: corsHeaders });
 
