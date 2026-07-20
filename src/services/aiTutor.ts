@@ -31,6 +31,11 @@ export async function askAiTutor(question: string, subjects: Subject[]): Promise
   return data ?? { error: "A IA não retornou uma resposta." };
 }
 
+export async function generateAiSummary(subject: Subject): Promise<string | undefined> {
+  const result = await askAiTutor(`Crie um resumo de revisão da matéria ${subject.name}, com conceitos principais, pontos para revisar e próximos passos.`, [subject]);
+  return result.answer;
+}
+
 export async function extractMaterialText(assetUrl: string, mimeType: string): Promise<string | undefined> {
   if (!supabase) return undefined;
   const { data } = await supabase.functions.invoke<{ extractedText?: string }>("mentalis-ai", { body: { mode: "extract", assetUrl, mimeType } });

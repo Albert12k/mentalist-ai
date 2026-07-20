@@ -38,6 +38,7 @@ import {
 import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
 import { generateAiFlashcards, generateAiQuiz } from "../services/aiTutor";
+import { generateAiSummary } from "../services/aiTutor";
 import { extractMaterialText } from "../services/aiTutor";
 import {
   FlashcardReviewRating,
@@ -98,6 +99,8 @@ export default function SubjectDetailsScreen() {
   const [textMaterial, setTextMaterial] = useState<SubjectMaterial | null>(null);
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
   const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
   const materials = subject.materials ?? [];
@@ -308,6 +311,14 @@ export default function SubjectDetailsScreen() {
   function handleSaveFlashcard(flashcard: SubjectFlashcard) {
     updateSubject({ ...subject, flashcards: [...flashcards, flashcard] });
     setFlashcardCreateVisible(false);
+  }
+
+  async function handleGenerateSummary() {
+    if (generatingSummary) return;
+    setGeneratingSummary(true);
+    const result = await generateAiSummary(subject);
+    setGeneratingSummary(false);
+    setSummary(result ?? "Não foi possível gerar o resumo agora. Tente novamente mais tarde.");
   }
 
   async function handleGenerateFlashcards() {
@@ -723,6 +734,8 @@ export default function SubjectDetailsScreen() {
         <View style={styles.card}>
           <SectionHeader title="Anotações" actionLabel="Editar" onAction={() => setNotesVisible(true)} />
           <Text style={styles.detail}>{subject.notes || "Nenhuma anotação ainda."}</Text>
+          <ActionButton label={generatingSummary ? "IA resumindo..." : "Resumir com IA"} color="#5E35B1" onPress={() => void handleGenerateSummary()} />
+          {summary ? <Text style={[styles.detail, { marginTop: 14 }]}>{summary}</Text> : null}
         </View>
       </ScrollView>
 
