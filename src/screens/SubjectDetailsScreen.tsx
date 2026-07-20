@@ -310,6 +310,11 @@ export default function SubjectDetailsScreen() {
     setMaterialDraft(null);
   }
 
+  async function handleExtractMaterial(material: SubjectMaterial) {
+    const text = await extractMaterialText(material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
+    updateSubject({ ...subject, materials: materials.map((item) => item.id === material.id ? { ...item, ...(text ? { extractedText: text, extractedAt: new Date().toISOString(), extractionError: undefined } : { extractionError: "A IA não retornou texto." }) } : item) });
+  }
+
   function handleSaveFlashcard(flashcard: SubjectFlashcard) {
     updateSubject({ ...subject, flashcards: [...flashcards, flashcard] });
     setFlashcardCreateVisible(false);
@@ -590,6 +595,7 @@ export default function SubjectDetailsScreen() {
                     onDelete={() => handleDeleteMaterial(material)}
                     onPreviewImage={setPreviewMaterial}
                     onViewExtractedText={setTextMaterial}
+                    onExtractText={(material) => void handleExtractMaterial(material)}
                   />
                 ))}
               </View>

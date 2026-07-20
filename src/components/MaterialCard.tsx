@@ -21,6 +21,7 @@ type Props = {
   onDelete: () => void;
   onPreviewImage: (material: SubjectMaterial) => void;
   onViewExtractedText: (material: SubjectMaterial) => void;
+  onExtractText: (material: SubjectMaterial) => void;
 };
 
 function formatDuration(durationMillis?: number): string | null {
@@ -34,7 +35,7 @@ function formatDuration(durationMillis?: number): string | null {
 
 // Cada cartão sabe apresentar o tipo de arquivo que representa. Para áudio,
 // usamos o player oficial do Expo, permitindo ouvir a gravação no mesmo lugar.
-export default function MaterialCard({ material, onDelete, onPreviewImage, onViewExtractedText }: Props) {
+export default function MaterialCard({ material, onDelete, onPreviewImage, onViewExtractedText, onExtractText }: Props) {
   const player = useAudioPlayer(material.type === "audio" ? material.uri : null);
   const playerStatus = useAudioPlayerStatus(player);
   const details = [formatDuration(material.durationMillis), formatMaterialSize(material.size)]
@@ -103,6 +104,7 @@ export default function MaterialCard({ material, onDelete, onPreviewImage, onVie
           />
         ) : null}
         {material.extractedText ? <Action label="Ver texto" color="#263238" onPress={() => onViewExtractedText(material)} /> : null}
+        {!material.extractedText && material.storagePath ? <Action label="Ler com IA" color="#5E35B1" onPress={() => onExtractText(material)} /> : null}
         <Action label="Excluir" color="#B00020" onPress={onDelete} />
       </View>
     </View>
