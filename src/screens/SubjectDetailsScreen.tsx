@@ -37,6 +37,7 @@ import {
 } from "../services/materials";
 import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
+import { generateAiFlashcards, generateAiQuiz } from "../services/aiTutor";
 import {
   FlashcardReviewRating,
   formatNextReview,
@@ -94,6 +95,7 @@ export default function SubjectDetailsScreen() {
   const [materialDraft, setMaterialDraft] = useState<MaterialDraft | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<SubjectMaterial | null>(null);
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
+  const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
   const materials = subject.materials ?? [];
@@ -303,8 +305,12 @@ export default function SubjectDetailsScreen() {
     setFlashcardCreateVisible(false);
   }
 
-  function handleGenerateFlashcards() {
-    const generatedFlashcards = generateFlashcardsFromSubject(subject, flashcards);
+  async function handleGenerateFlashcards() {
+    if (generatingAssessment) return;
+    setGeneratingAssessment("flashcards");
+    const generatedByAi = await generateAiFlashcards(subject);
+    setGeneratingAssessment(null);
+    const generatedFlashcards = generatedByAi.length ? generatedByAi : generateFlashcardsFromSubject(subject, flashcards);
 
     if (generatedFlashcards.length === 0) {
       Alert.alert(
@@ -332,8 +338,11 @@ export default function SubjectDetailsScreen() {
     setQuizCreateVisible(false);
   }
 
-  function handleGenerateQuiz() {
-    const quiz = generateQuizFromSubject(subject);
+  async function handleGenerateQuiz() {
+    if (generatingAssessment) return;
+    setGeneratingAssessment("quiz");
+    const quiz = await generateAiQuiz(subject) ?? generateQuizFromSubject(subject);
+    setGeneratingAssessment(null);
 
     if (!quiz) {
       Alert.alert(
@@ -573,7 +582,7 @@ export default function SubjectDetailsScreen() {
           />
           <Text style={styles.sectionHint}>O Mentalis pode criar perguntas de revisão e programar o próximo encontro com cada carta.</Text>
           <View style={styles.materialActions}>
-            <ActionButton label="Gerar dos conteúdos" color="#5E35B1" onPress={handleGenerateFlashcards} />
+            <ActionButton label={generatingAssessment === "flashcards" ? "IA criando..." : "Gerar com IA"} color="#5E35B1" onPress={() => void handleGenerateFlashcards()} />
           </View>
 
           {flashcards.length === 0 ? (
@@ -610,7 +619,7 @@ export default function SubjectDetailsScreen() {
           />
           <Text style={styles.sectionHint}>Gere perguntas a partir das descrições dos conteúdos ou crie manualmente.</Text>
           <View style={styles.materialActions}>
-            <ActionButton label="Gerar quiz dos conteúdos" color="#5E35B1" onPress={handleGenerateQuiz} />
+            <ActionButton label={generatingAssessment === "quiz" ? "IA criando..." : "Gerar quiz com IA"} color="#5E35B1" onPress={() => void handleGenerateQuiz()} />
           </View>
 
           {quizzes.length === 0 ? (
