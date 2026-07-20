@@ -84,6 +84,7 @@ export default function MaterialCard({ material, onDelete, onPreviewImage, onVie
           <Text style={[styles.syncStatus, material.storagePath ? styles.syncedStatus : styles.localStatus]}>
             {material.storagePath ? "☁ Sincronizado" : "⌂ Salvo neste aparelho"}
           </Text>
+          {material.extractedText ? <Text style={styles.syncedStatus}>✓ Texto extraído pela IA</Text> : material.storagePath ? <Text style={styles.localStatus}>{material.extractionError ? "⚠ Não foi possível ler o arquivo" : "◷ Texto ainda não foi extraído"}</Text> : null}
         </View>
       </View>
 

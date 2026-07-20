@@ -254,6 +254,7 @@ export type SubjectMaterial = {
   // resumos, quizzes e flashcards possam usar o conteúdo real da aula.
   extractedText?: string;
   extractedAt?: string;
+  extractionError?: string;
 
   // Data em que o arquivo foi incluído. Ela organiza a biblioteca da matéria.
   postedAt: string;
