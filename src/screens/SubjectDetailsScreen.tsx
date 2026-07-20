@@ -95,6 +95,7 @@ export default function SubjectDetailsScreen() {
   const [editingEvent, setEditingEvent] = useState<SubjectEvent | null>(null);
   const [materialDraft, setMaterialDraft] = useState<MaterialDraft | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<SubjectMaterial | null>(null);
+  const [textMaterial, setTextMaterial] = useState<SubjectMaterial | null>(null);
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
   const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
 
@@ -571,6 +572,7 @@ export default function SubjectDetailsScreen() {
                     material={material}
                     onDelete={() => handleDeleteMaterial(material)}
                     onPreviewImage={setPreviewMaterial}
+                    onViewExtractedText={setTextMaterial}
                   />
                 ))}
               </View>
@@ -797,6 +799,15 @@ export default function SubjectDetailsScreen() {
           {previewMaterial ? (
             <Image source={{ uri: previewMaterial.uri }} style={styles.fullImage} resizeMode="contain" />
           ) : null}
+        </SafeAreaView>
+      </Modal>
+      <Modal visible={Boolean(textMaterial)} animationType="slide" onRequestClose={() => setTextMaterial(null)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#080810" }}>
+          <View style={{ padding: 18, flexDirection: "row", justifyContent: "space-between" }}>
+            <Text style={{ color: "white", fontSize: 18, fontWeight: "700", flex: 1 }}>{textMaterial?.title}</Text>
+            <Pressable onPress={() => setTextMaterial(null)}><Text style={{ color: "#C5B5FF", fontWeight: "700" }}>Fechar</Text></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}><Text style={{ color: "#E8E8F2", fontSize: 16, lineHeight: 25 }}>{textMaterial?.extractedText}</Text></ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
