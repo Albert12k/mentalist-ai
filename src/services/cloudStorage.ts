@@ -20,7 +20,7 @@ async function readFileAsArrayBuffer(uri: string): Promise<ArrayBuffer> {
 export async function uploadUserAsset(
   userId: string,
   uri: string,
-  area: "avatars" | "subjects",
+  area: "avatars" | "subjects" | "materials",
   fileName: string,
   contentType = "image/jpeg",
 ): Promise<{ path: string; url: string }> {
@@ -41,4 +41,11 @@ export async function getUserAssetUrl(path?: string): Promise<string | undefined
   if (!supabase || !path) return undefined;
   const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
   return error ? undefined : data.signedUrl;
+}
+
+// Ao excluir um material, removemos também a cópia privada na nuvem.
+export async function deleteUserAsset(path?: string): Promise<void> {
+  if (!supabase || !path) return;
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+  if (error) throw error;
 }

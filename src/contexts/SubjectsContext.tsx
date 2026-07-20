@@ -37,7 +37,12 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
       const hydrated = await Promise.all(saved.map(async (subject) => {
         const normalized = normalizeSubject(subject);
         const cloudImageUrl = await getUserAssetUrl(normalized.imagePath);
-        return { ...normalized, ...(cloudImageUrl ? { image: cloudImageUrl } : {}), materials: await Promise.all(normalized.materials.map(hydrateMaterialForPlatform)) };
+        const hydratedMaterials = await Promise.all(normalized.materials.map(async (material) => {
+          // O link do Storage expira por segurança; ele é recriado a cada abertura.
+          const cloudMaterialUrl = await getUserAssetUrl(material.storagePath);
+          return cloudMaterialUrl ? { ...material, uri: cloudMaterialUrl } : hydrateMaterialForPlatform(material);
+        }));
+        return { ...normalized, ...(cloudImageUrl ? { image: cloudImageUrl } : {}), materials: hydratedMaterials };
       }));
       if (active) setSubjects(hydrated);
       if (!cloudSubjects) void saveCloudSubjects(userId, saved);

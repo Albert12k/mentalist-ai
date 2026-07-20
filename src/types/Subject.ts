@@ -246,6 +246,10 @@ export type SubjectMaterial = {
   // depois de recarregar a página, mas esta chave permite recriá-lo.
   webStorageKey?: string;
 
+  // Caminho privado no Storage. A URL segura e temporária é recriada quando
+  // a conta abre o aplicativo, sem precisar expor o arquivo publicamente.
+  storagePath?: string;
+
   // Data em que o arquivo foi incluído. Ela organiza a biblioteca da matéria.
   postedAt: string;
 };

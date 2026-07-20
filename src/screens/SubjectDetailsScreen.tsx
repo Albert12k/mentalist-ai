@@ -26,6 +26,7 @@ import MaterialImportModal from "../components/MaterialImportModal";
 import QuizPlayerModal from "../components/QuizPlayerModal";
 import StudySessionModal from "../components/StudySessionModal";
 import { useSubjects } from "../contexts/SubjectsContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   deleteLocalMaterial,
   formatMaterialDate,
@@ -34,6 +35,7 @@ import {
   persistImportedMaterial,
   suggestMaterialCategory,
 } from "../services/materials";
+import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
 import {
   FlashcardReviewRating,
@@ -76,6 +78,7 @@ export default function SubjectDetailsScreen() {
   const route = useRoute<any>();
   const routeSubject: Subject = route.params.subject;
   const { subjects, updateSubject } = useSubjects();
+  const { userId } = useAuth();
   const [contentVisible, setContentVisible] = useState(false);
   const [eventVisible, setEventVisible] = useState(false);
   const [notesVisible, setNotesVisible] = useState(false);
@@ -259,13 +262,33 @@ export default function SubjectDetailsScreen() {
     setMaterialDraft(null);
   }
 
-  function handleSaveMaterial(draft: MaterialDraft) {
+  async function handleSaveMaterial(draft: MaterialDraft) {
+    let storagePath: string | undefined;
+
+    // O arquivo local é mantido como reserva caso a internet falhe durante o envio.
+    if (userId) {
+      try {
+        const extension = draft.type === "pdf" ? "pdf" : draft.type === "audio" ? "m4a" : "jpg";
+        const uploaded = await uploadUserAsset(
+          userId,
+          draft.uri,
+          "materials",
+          `${draft.title}.${extension}`,
+          draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"),
+        );
+        storagePath = uploaded.path;
+      } catch {
+        Alert.alert("Salvo neste aparelho", "Não foi possível enviar este material agora. Ele continua salvo localmente.");
+      }
+    }
+
     updateSubject({
       ...subject,
       materials: [
         ...materials,
         {
           ...draft,
+          ...(storagePath ? { storagePath } : {}),
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           postedAt: new Date().toISOString(),
         },
@@ -417,6 +440,7 @@ export default function SubjectDetailsScreen() {
         materials: materials.filter((item) => item.id !== material.id),
       });
       void deleteLocalMaterial(material.uri, material.webStorageKey);
+      void deleteUserAsset(material.storagePath);
     });
   }
 
