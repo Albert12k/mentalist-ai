@@ -21,6 +21,8 @@ function normalizeProfile(profile: UserProfile): UserProfile {
     claimedChallengeIds: profile.claimedChallengeIds ?? [],
     streakFreezeDates: profile.streakFreezeDates ?? [],
     selectedTheme: profile.selectedTheme ?? "purple",
+    defaultPomodoroMinutes: profile.defaultPomodoroMinutes ?? 25,
+    remindersEnabled: profile.remindersEnabled !== false,
     plan: profile.plan ?? "free",
   };
 }

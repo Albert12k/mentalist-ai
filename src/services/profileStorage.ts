@@ -27,6 +27,8 @@ export async function getProfile(userId: string, defaultName?: string): Promise<
       selectedTitle: typeof savedProfile.selectedTitle === "string" ? savedProfile.selectedTitle : undefined,
       selectedTheme: savedProfile.selectedTheme === "emerald" || savedProfile.selectedTheme === "sunset" ? savedProfile.selectedTheme : "purple",
       streakFreezeDates: Array.isArray(savedProfile.streakFreezeDates) ? savedProfile.streakFreezeDates.filter((date): date is string => typeof date === "string") : [],
+      defaultPomodoroMinutes: [15, 25, 45, 60].includes(savedProfile.defaultPomodoroMinutes ?? 25) ? savedProfile.defaultPomodoroMinutes as 15 | 25 | 45 | 60 : 25,
+      remindersEnabled: savedProfile.remindersEnabled !== false,
       plan: savedProfile.plan === "pro" ? "pro" : "free",
       subscriptionStatus: savedProfile.subscriptionStatus ?? "inactive",
     };
@@ -42,4 +44,8 @@ export async function saveProfile(userId: string, profile: UserProfile) {
   } catch (error) {
     console.log("Erro ao salvar perfil:", error);
   }
+}
+
+export async function clearLocalProfile(userId: string) {
+  await AsyncStorage.removeItem(getKey(userId));
 }

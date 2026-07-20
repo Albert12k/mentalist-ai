@@ -15,6 +15,8 @@ export type UserProfile = {
   selectedTheme?: "purple" | "emerald" | "sunset";
   // Cada data representa um dia perdido que foi coberto por uma proteção.
   streakFreezeDates?: string[];
+  defaultPomodoroMinutes?: 15 | 25 | 45 | 60;
+  remindersEnabled?: boolean;
 
   // A assinatura fica no perfil desde já. A cobrança será conectada depois,
   // sem precisar mudar as telas e regras que consultam o plano atual.
@@ -31,4 +33,6 @@ export const defaultUserProfile: UserProfile = {
   subscriptionStatus: "inactive",
   selectedTheme: "purple",
   streakFreezeDates: [],
+  defaultPomodoroMinutes: 25,
+  remindersEnabled: true,
 };

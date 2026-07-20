@@ -95,12 +95,6 @@ export default function ChallengesScreen() {
           <View style={styles.freezeRow}><Text style={styles.freezeText}>🛡️ Proteções disponíveis: {availableFreezes}</Text>{activity.protectableDate && availableFreezes > 0 ? <Pressable onPress={useStreakProtection} style={styles.freezeButton}><Text style={styles.freezeButtonText}>Proteger ontem</Text></Pressable> : null}</View>
         </View>
 
-        <View style={styles.calendarCard}>
-          <Text style={styles.calendarTitle}>{activity.monthLabel}</Text>
-          <View style={styles.calendarGrid}>{["S", "T", "Q", "Q", "S", "S", "D"].map((label, index) => <Text key={`${label}-${index}`} style={styles.calendarWeekLabel}>{label}</Text>)}{activity.monthDays.map((day, index) => day ? <View key={day.key} style={[styles.calendarDay, day.active && styles.calendarDayActive, day.protected && styles.calendarDayProtected]}><Text style={[styles.calendarDayText, (day.active || day.protected) && styles.calendarDayTextActive]}>{day.day}</Text></View> : <View key={`empty-${index}`} style={styles.calendarDay} />)}</View>
-          <Text style={styles.calendarLegend}>● Estudo registrado   🛡 Dia protegido</Text>
-        </View>
-
         <Text style={styles.sectionTitle}>Suas recompensas</Text>
         <Text style={styles.sectionDescription}>Ganhe XP estudando e equipe o título que mais combina com você.</Text>
         {nextReward ? <View style={styles.nextRewardCard}><View style={styles.row}><Text style={styles.nextRewardTitle}>Próxima: {nextReward.title}</Text><Text style={styles.nextRewardXP}>{totalXP}/{nextReward.requiredXP} XP</Text></View><View style={styles.progressWrapper}><ProgressBar value={(totalXP / nextReward.requiredXP) * 100} color="#FFD76A" /></View><Text style={styles.nextRewardHint}>Faltam {nextReward.requiredXP - totalXP} XP para desbloquear.</Text></View> : <View style={styles.nextRewardCard}><Text style={styles.nextRewardTitle}>Todas as recompensas desbloqueadas 🏆</Text></View>}
@@ -195,16 +189,6 @@ const styles = {
   freezeText: { color: "#D6C796", fontWeight: "700", flex: 1 },
   freezeButton: { backgroundColor: "#745D25", paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9 },
   freezeButtonText: { color: "white", fontWeight: "700", fontSize: 12 },
-  calendarCard: { backgroundColor: "#161625", borderRadius: 18, padding: 17, marginTop: 12 },
-  calendarTitle: { color: "white", fontSize: 17, fontWeight: "800", textTransform: "capitalize", marginBottom: 13 },
-  calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
-  calendarWeekLabel: { width: "14.285%", color: "#77778D", textAlign: "center", fontWeight: "700", marginBottom: 8 },
-  calendarDay: { width: "14.285%", height: 34, alignItems: "center", justifyContent: "center", borderRadius: 9 },
-  calendarDayActive: { backgroundColor: "#6845CE" },
-  calendarDayProtected: { backgroundColor: "#745D25" },
-  calendarDayText: { color: "#77778D", fontWeight: "600" },
-  calendarDayTextActive: { color: "white", fontWeight: "800" },
-  calendarLegend: { color: "#77778D", fontSize: 11, marginTop: 12 },
   nextRewardCard: { backgroundColor: "#201B2D", borderRadius: 14, padding: 14, marginBottom: 13 },
   nextRewardTitle: { color: "white", fontWeight: "800", flex: 1 },
   nextRewardXP: { color: "#FFD76A", fontWeight: "700", marginLeft: 10 },

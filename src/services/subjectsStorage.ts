@@ -33,3 +33,7 @@ export async function getSubjects(userId: string): Promise<Subject[]> {
     return [];
   }
 }
+
+export async function clearLocalSubjects(userId: string) {
+  await AsyncStorage.removeItem(getKey(userId));
+}

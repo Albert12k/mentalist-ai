@@ -46,22 +46,6 @@ export default function SubjectsScreen() {
     navigation.navigate("SubjectDetails", { subject });
   }
 
-  function handleRegisterAbsence(subject: Subject) {
-    updateSubject({
-      ...subject,
-      absences: subject.absences + 1,
-    });
-  }
-
-  function handleRemoveAbsence(subject: Subject) {
-    if (subject.absences === 0) return;
-
-    updateSubject({
-      ...subject,
-      absences: subject.absences - 1,
-    });
-  }
-
   function handleSaveEdit(subject: Subject) {
     updateSubject(subject);
     setSelectedSubject(null);
@@ -130,8 +114,7 @@ export default function SubjectsScreen() {
 
               <View style={styles.actions}>
                 <ActionButton label="Estudar" color="#7C4DFF" onPress={() => openDetails(subject)} />
-                <ActionButton label="Falta +1" color="#B35C00" onPress={() => handleRegisterAbsence(subject)} />
-                <ActionButton label="Falta -1" color="#6D4C41" onPress={() => handleRemoveAbsence(subject)} />
+                <ActionButton label="Registrar falta" color="#B35C00" onPress={() => openDetails(subject)} />
                 <ActionButton label="Editar" color="#263238" onPress={() => setSelectedSubject(subject)} />
                 <ActionButton label="Excluir" color="#B00020" onPress={() => handleDelete(subject)} />
               </View>

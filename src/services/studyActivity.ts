@@ -7,8 +7,6 @@ export type StudyWeekDay = {
   today: boolean;
 };
 
-export type StudyMonthDay = { key: string; day: number; active: boolean; protected: boolean };
-
 function startOfDay(date: Date): Date {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -59,21 +57,11 @@ export function buildStudyActivity(subjects: Subject[], protectedDates: string[]
     return { key: dayKey(date), label, active: studiedDays.has(dayKey(date)), today: dayKey(date) === dayKey(today) };
   });
 
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
-  const monthDays: (StudyMonthDay | null)[] = Array.from({ length: firstWeekday }, () => null);
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const key = dayKey(new Date(year, month, day));
-    monthDays.push({ key, day, active: studiedDays.has(key), protected: protectedDays.has(key) });
-  }
-
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
   const dayBeforeYesterday = new Date(today);
   dayBeforeYesterday.setDate(today.getDate() - 2);
   const protectableDate = !activeDays.has(dayKey(yesterday)) && activeDays.has(dayKey(dayBeforeYesterday)) ? dayKey(yesterday) : undefined;
 
-  return { currentStreak, bestStreak, totalActiveDays: studiedDays.size, week, monthDays, monthLabel: today.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }), protectableDate };
+  return { currentStreak, bestStreak, totalActiveDays: studiedDays.size, week, protectableDate };
 }

@@ -22,6 +22,7 @@ export type RootStackParamList = {
   Training: {
     mode: "manual" | "guided" | "auto";
     subjectIds: string[];
+    openTimer?: boolean;
   };
   Tutor: undefined;
   ReviewQueue: undefined;

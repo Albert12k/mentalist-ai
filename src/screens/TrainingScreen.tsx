@@ -26,10 +26,10 @@ const modeLabels: Record<StudyMode, string> = {
 export default function TrainingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { subjectIds, mode }: { subjectIds: string[]; mode: StudyMode } = route.params;
+  const { subjectIds, mode, openTimer }: { subjectIds: string[]; mode: StudyMode; openTimer?: boolean } = route.params;
   const { subjects, updateSubject } = useSubjects();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [sessionVisible, setSessionVisible] = useState(false);
+  const [sessionVisible, setSessionVisible] = useState(Boolean(openTimer));
   const [finished, setFinished] = useState(false);
   const trainingSubjects = subjectIds
     .map((id) => subjects.find((subject) => subject.id === id))

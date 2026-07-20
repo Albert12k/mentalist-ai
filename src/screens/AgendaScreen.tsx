@@ -1,187 +1,137 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-import { useSubjects } from "../contexts/SubjectsContext";
 import QuickAddActivityModal from "../components/QuickAddActivityModal";
-import { scheduleActivityReminders } from "../services/activityReminders";
-import { Subject, SubjectEvent } from "../types/Subject";
+import { classModeLabels } from "../constants/subjectSchedule";
+import { useSubjects } from "../contexts/SubjectsContext";
+import { useProfile } from "../contexts/ProfileContext";
+import { cancelActivityReminders, scheduleActivityReminders } from "../services/activityReminders";
+import { ClassDay, Subject, SubjectEvent } from "../types/Subject";
 
-type AgendaFilter = "next" | "month" | "all";
+type CalendarView = "month" | "week";
 type AgendaItem = { subject: Subject; event: SubjectEvent; daysUntil: number };
+type CalendarDay = { key: string; date: Date; currentMonth: boolean };
 
 const DAY = 86_400_000;
+const weekdayKeys: ClassDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-// A data vem no formato AAAA-MM-DD. Usar meio-dia evita que o fuso horário
-// transforme uma atividade do dia em uma atividade do dia anterior.
-function getDaysUntil(date: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const eventDate = new Date(`${date}T12:00:00`);
+function startOfDay(date: Date) { const value = new Date(date); value.setHours(0, 0, 0, 0); return value; }
+function dateKey(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
+function parseDate(key: string) { return new Date(`${key}T12:00:00`); }
+function getDaysUntil(date: string) { return Math.round((startOfDay(parseDate(date)).getTime() - startOfDay(new Date()).getTime()) / DAY); }
+function formatDate(date: Date) { return date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }); }
+function getEventLabel(type: SubjectEvent["type"]) { return type === "exam" ? "Prova" : type === "assignment" ? "Trabalho" : "Revisão"; }
+function getTimeLabel(days: number) { return days < 0 ? `${Math.abs(days)} dia(s) em atraso` : days === 0 ? "Hoje" : days === 1 ? "Amanhã" : `Em ${days} dias`; }
 
-  return Math.round((eventDate.getTime() - today.getTime()) / DAY);
+function buildMonthDays(reference: Date): CalendarDay[] {
+  const first = new Date(reference.getFullYear(), reference.getMonth(), 1);
+  const gridStart = new Date(first);
+  gridStart.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    return { key: dateKey(date), date, currentMonth: date.getMonth() === reference.getMonth() };
+  });
 }
 
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-  }).format(new Date(`${date}T12:00:00`));
-}
-
-function getEventLabel(type: SubjectEvent["type"]) {
-  if (type === "exam") return "Prova";
-  if (type === "assignment") return "Trabalho";
-  return "Revisão";
-}
-
-function getTimeLabel(daysUntil: number) {
-  if (daysUntil < 0) return `${Math.abs(daysUntil)} dia(s) em atraso`;
-  if (daysUntil === 0) return "Hoje";
-  if (daysUntil === 1) return "Amanhã";
-  return `Em ${daysUntil} dias`;
+function buildWeekDays(reference: Date): CalendarDay[] {
+  const start = new Date(reference);
+  start.setDate(reference.getDate() - ((reference.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return { key: dateKey(date), date, currentMonth: true }; });
 }
 
 export default function AgendaScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { subjects, updateSubject } = useSubjects();
-  const [filter, setFilter] = useState<AgendaFilter>("next");
+  const { profile } = useProfile();
+  const [calendarView, setCalendarView] = useState<CalendarView>("month");
+  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [createVisible, setCreateVisible] = useState(false);
 
-  const events = useMemo<AgendaItem[]>(() => (
-    subjects
-      .flatMap((subject) => subject.events.filter((event) => !event.completed).map((event) => ({
-        subject,
-        event,
-        daysUntil: getDaysUntil(event.date),
-      })))
-      .sort((first, second) => first.daysUntil - second.daysUntil)
-  ), [subjects]);
+  useEffect(() => {
+    if (!route.params?.openCreate) return;
+    setCreateVisible(true);
+    navigation.setParams({ openCreate: undefined });
+  }, [navigation, route.params?.openCreate]);
 
-  const visibleEvents = events.filter((item) => {
-    if (filter === "all") return true;
-    if (filter === "month") return item.daysUntil >= 0 && item.daysUntil <= 30;
-    return item.daysUntil >= 0 && item.daysUntil <= 7;
-  });
+  const events = useMemo<AgendaItem[]>(() => subjects.flatMap((subject) => subject.events.filter((event) => !event.completed).map((event) => ({ subject, event, daysUntil: getDaysUntil(event.date) }))).sort((a, b) => a.daysUntil - b.daysUntil), [subjects]);
+  const selectedKey = dateKey(selectedDate);
+  const selectedEvents = events.filter((item) => item.event.date === selectedKey);
+  const selectedClasses = subjects.filter((subject) => (subject.classDays ?? []).includes(weekdayKeys[selectedDate.getDay()]));
+  const todayClasses = subjects.filter((subject) => (subject.classDays ?? []).includes(weekdayKeys[new Date().getDay()]));
+  const todayEvents = events.filter((item) => item.daysUntil === 0);
   const overdueCount = events.filter((item) => item.daysUntil < 0).length;
   const nextEvent = events.find((item) => item.daysUntil >= 0);
+  const calendarDays = calendarView === "month" ? buildMonthDays(selectedDate) : buildWeekDays(selectedDate);
+  const eventColors = new Map<string, string[]>();
+  events.forEach(({ subject, event }) => eventColors.set(event.date, [...(eventColors.get(event.date) ?? []), subject.color]));
 
   async function handleCreateActivity(subjectId: string, event: SubjectEvent) {
     const subject = subjects.find((item) => item.id === subjectId);
     if (!subject) return;
-
     let notificationIds: string[] = [];
-    try {
-      notificationIds = await scheduleActivityReminders(event, subject.name);
-    } catch {
-      Alert.alert("Atividade salva", "Não foi possível programar os alertas do dispositivo agora.");
-    }
-
+    try { if (profile.remindersEnabled !== false) notificationIds = await scheduleActivityReminders(event, subject.name); } catch { Alert.alert("Atividade salva", "Não foi possível programar os alertas do dispositivo agora."); }
     updateSubject({ ...subject, events: [...subject.events, { ...event, notificationIds }] });
+    setSelectedDate(parseDate(event.date));
     setCreateVisible(false);
+  }
+
+  async function completeEvent(subject: Subject, event: SubjectEvent) {
+    await cancelActivityReminders(event.notificationIds);
+    updateSubject({ ...subject, events: subject.events.map((item) => item.id === event.id ? { ...item, completed: true, notificationIds: [] } : item) });
+  }
+
+  function moveCalendar(direction: number) {
+    const next = new Date(selectedDate);
+    if (calendarView === "month") next.setMonth(next.getMonth() + direction, 1);
+    else next.setDate(next.getDate() + direction * 7);
+    setSelectedDate(next);
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.titleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Agenda</Text>
-            <Text style={styles.subtitle}>Veja provas, trabalhos e revisões em um só lugar.</Text>
-          </View>
-          <Pressable onPress={() => setCreateVisible(true)} style={styles.addButton}>
-            <Text style={styles.addButtonText}>+ Atividade</Text>
-          </Pressable>
+        <View style={styles.titleRow}><View style={{ flex: 1 }}><Text style={styles.title}>Agenda</Text><Text style={styles.subtitle}>Aulas, provas, trabalhos e revisões em um só lugar.</Text></View><Pressable onPress={() => setCreateVisible(true)} style={styles.addButton}><Text style={styles.addButtonText}>+ Atividade</Text></Pressable></View>
+
+        <View style={styles.metricsRow}>
+          <Metric value={String(todayClasses.length)} label="aulas hoje" color="#8C64FF" />
+          <Metric value={String(todayEvents.length)} label="tarefas hoje" color="#39B985" />
+          <Metric value={String(overdueCount)} label="atrasadas" color="#E37A4C" />
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>{nextEvent ? "Próximo compromisso" : "Sua agenda está livre"}</Text>
-          {nextEvent ? (
-            <>
-              <Text style={styles.summaryEvent}>{nextEvent.event.title}</Text>
-              <Text style={styles.summaryDetail}>{nextEvent.subject.name} · {getTimeLabel(nextEvent.daysUntil)}</Text>
-            </>
-          ) : (
-            <Text style={styles.summaryDetail}>Cadastre uma atividade dentro de uma matéria para vê-la aqui.</Text>
-          )}
+        <View style={styles.nextCard}><Text style={styles.nextEyebrow}>PRÓXIMO COMPROMISSO</Text>{nextEvent ? <><Text style={styles.nextTitle}>{nextEvent.event.title}</Text><Text style={styles.nextDetail}>{nextEvent.subject.name} • {getTimeLabel(nextEvent.daysUntil)}</Text></> : <><Text style={styles.nextTitle}>Tudo em dia</Text><Text style={styles.nextDetail}>Nenhuma atividade futura cadastrada.</Text></>}</View>
+
+        <View style={styles.calendarCard}>
+          <View style={styles.calendarTop}><Pressable onPress={() => moveCalendar(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>‹</Text></Pressable><Text style={styles.calendarTitle}>{selectedDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</Text><Pressable onPress={() => moveCalendar(1)} style={styles.arrowButton}><Text style={styles.arrowText}>›</Text></Pressable></View>
+          <View style={styles.viewToggle}><Toggle label="Mês" active={calendarView === "month"} onPress={() => setCalendarView("month")} /><Toggle label="Semana" active={calendarView === "week"} onPress={() => setCalendarView("week")} /><Pressable onPress={() => setSelectedDate(startOfDay(new Date()))} style={styles.todayButton}><Text style={styles.todayText}>Hoje</Text></Pressable></View>
+          <View style={styles.calendarGrid}>{["S", "T", "Q", "Q", "S", "S", "D"].map((label, index) => <Text key={`${label}-${index}`} style={styles.weekLabel}>{label}</Text>)}{calendarDays.map((day) => { const selected = day.key === selectedKey; const today = day.key === dateKey(new Date()); const classColors = subjects.filter((subject) => (subject.classDays ?? []).includes(weekdayKeys[day.date.getDay()])).map((subject) => subject.color); const colors = [...new Set([...(eventColors.get(day.key) ?? []), ...classColors])]; return <Pressable key={day.key} onPress={() => setSelectedDate(day.date)} style={[styles.dayCell, selected && styles.daySelected, today && styles.dayToday]}><Text style={[styles.dayText, !day.currentMonth && styles.dayMuted, selected && styles.daySelectedText]}>{day.date.getDate()}</Text><View style={styles.dots}>{colors.slice(0, 3).map((color, index) => <View key={`${color}-${index}`} style={[styles.dot, { backgroundColor: color }]} />)}</View></Pressable>; })}</View>
         </View>
 
-        {overdueCount > 0 ? (
-          <View style={styles.warningCard}>
-            <Text style={styles.warningText}>{overdueCount} atividade(s) com prazo passado. Use “Todos” para conferir.</Text>
-          </View>
-        ) : null}
+        <Text style={styles.sectionTitle}>{formatDate(selectedDate)}</Text>
+        {selectedClasses.length > 0 ? <View style={styles.classesCard}><Text style={styles.classesTitle}>Aulas do dia</Text>{selectedClasses.map((subject) => <Pressable key={subject.id} onPress={() => navigation.navigate("SubjectDetails", { subject })} style={styles.classRow}><View style={[styles.classColor, { backgroundColor: subject.color }]} /><View style={{ flex: 1 }}><Text style={styles.className}>{subject.name}</Text><Text style={styles.classMode}>{classModeLabels[subject.classMode ?? "in_person"]}</Text></View><Text style={styles.openText}>Abrir →</Text></Pressable>)}</View> : null}
 
-        <View style={styles.filters}>
-          <FilterButton label="Próximos 7 dias" active={filter === "next"} onPress={() => setFilter("next")} />
-          <FilterButton label="30 dias" active={filter === "month"} onPress={() => setFilter("month")} />
-          <FilterButton label="Todos" active={filter === "all"} onPress={() => setFilter("all")} />
-        </View>
-
-        {visibleEvents.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>Nada por aqui</Text>
-            <Text style={styles.emptyText}>Não há atividades neste período.</Text>
-          </View>
-        ) : visibleEvents.map(({ subject, event, daysUntil }) => (
-          <Pressable
-            key={`${subject.id}-${event.id}`}
-            onPress={() => navigation.navigate("SubjectDetails", { subject })}
-            style={[styles.eventCard, { borderLeftColor: subject.color }]}
-          >
-            <View style={styles.eventHeader}>
-              <View style={styles.eventMain}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text style={styles.subjectName}>{subject.name} · {getEventLabel(event.type)}</Text>
-              </View>
-              <Text style={[styles.timeLabel, daysUntil < 0 && styles.overdueLabel]}>{getTimeLabel(daysUntil)}</Text>
-            </View>
-            <Text style={styles.dateLabel}>{formatDate(event.date)}</Text>
-          </Pressable>
-        ))}
+        {selectedEvents.length === 0 && selectedClasses.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>📅</Text><Text style={styles.emptyTitle}>Dia livre</Text><Text style={styles.emptyText}>Não há aulas ou atividades nesta data.</Text><Pressable onPress={() => setCreateVisible(true)} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Adicionar atividade</Text></Pressable></View> : selectedEvents.map(({ subject, event, daysUntil }) => <View key={`${subject.id}-${event.id}`} style={[styles.eventCard, { borderLeftColor: subject.color }]}><Pressable onPress={() => navigation.navigate("SubjectDetails", { subject })} style={styles.eventMain}><View style={styles.eventHeader}><View style={{ flex: 1 }}><Text style={styles.eventTitle}>{event.title}</Text><Text style={styles.subjectName}>{subject.name} • {getEventLabel(event.type)}</Text></View><Text style={[styles.timeLabel, daysUntil < 0 && styles.overdueLabel]}>{getTimeLabel(daysUntil)}</Text></View></Pressable><Pressable onPress={() => completeEvent(subject, event)} style={styles.completeButton}><Text style={styles.completeText}>✓ Concluir</Text></Pressable></View>)}
       </ScrollView>
-      <QuickAddActivityModal visible={createVisible} subjects={subjects} onClose={() => setCreateVisible(false)} onSave={handleCreateActivity} />
+      <QuickAddActivityModal visible={createVisible} subjects={subjects} initialDate={selectedKey} onClose={() => setCreateVisible(false)} onSave={handleCreateActivity} />
     </SafeAreaView>
   );
 }
 
-function FilterButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.filterButton, active && styles.filterButtonActive]}>
-      <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
+function Metric({ value, label, color }: { value: string; label: string; color: string }) { return <View style={styles.metricCard}><Text style={[styles.metricValue, { color }]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>; }
+function Toggle({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) { return <Pressable onPress={onPress} style={[styles.toggleButton, active && styles.toggleActive]}><Text style={[styles.toggleText, active && styles.toggleTextActive]}>{label}</Text></Pressable>; }
 
 const styles = {
-  safeArea: { flex: 1, backgroundColor: "#080810" },
-  content: { padding: 20, paddingBottom: 40 },
-  titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 20 },
-  title: { color: "white", fontSize: 30, fontWeight: "700" },
-  subtitle: { color: "#8888AA", marginTop: 6 },
-  addButton: { backgroundColor: "#7C4DFF", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9, marginLeft: 10 },
-  addButtonText: { color: "white", fontSize: 12, fontWeight: "800" },
-  summaryCard: { backgroundColor: "#342769", padding: 17, borderRadius: 16 },
-  summaryTitle: { color: "#D6CFFF", fontSize: 13, fontWeight: "700" },
-  summaryEvent: { color: "white", fontSize: 19, fontWeight: "700", marginTop: 8 },
-  summaryDetail: { color: "#D6CFFF", marginTop: 5, lineHeight: 20 },
-  warningCard: { backgroundColor: "#382518", borderWidth: 1, borderColor: "#9A5B1D", borderRadius: 12, padding: 12, marginTop: 12 },
-  warningText: { color: "#FFD180", lineHeight: 19 },
-  filters: { flexDirection: "row", flexWrap: "wrap", marginTop: 20, marginBottom: 8 },
-  filterButton: { borderWidth: 1, borderColor: "#35354C", borderRadius: 20, paddingVertical: 8, paddingHorizontal: 11, marginRight: 8, marginBottom: 8 },
-  filterButtonActive: { backgroundColor: "#7C4DFF", borderColor: "#7C4DFF" },
-  filterText: { color: "#B9B9CD", fontSize: 12, fontWeight: "700" },
-  filterTextActive: { color: "white" },
-  eventCard: { backgroundColor: "#161625", padding: 15, borderRadius: 14, borderLeftWidth: 5, marginTop: 10 },
-  eventHeader: { flexDirection: "row", alignItems: "flex-start" },
-  eventMain: { flex: 1, marginRight: 10 },
-  eventTitle: { color: "white", fontSize: 16, fontWeight: "700" },
-  subjectName: { color: "#AAA", marginTop: 5, fontSize: 13 },
-  timeLabel: { color: "#B9A8FF", fontWeight: "700", fontSize: 12 },
-  overdueLabel: { color: "#FFB74D" },
-  dateLabel: { color: "#77778E", marginTop: 11, textTransform: "capitalize", fontSize: 12 },
-  emptyCard: { backgroundColor: "#161625", borderRadius: 16, padding: 18, marginTop: 8 },
-  emptyTitle: { color: "white", fontWeight: "700", fontSize: 17 },
-  emptyText: { color: "#8888AA", marginTop: 7 },
+  safeArea: { flex: 1, backgroundColor: "#080810" }, content: { padding: 20, paddingBottom: 45 },
+  titleRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 18 }, title: { color: "white", fontSize: 30, fontWeight: "700" }, subtitle: { color: "#8888AA", marginTop: 6 },
+  addButton: { backgroundColor: "#7C4DFF", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9, marginLeft: 10 }, addButtonText: { color: "white", fontSize: 12, fontWeight: "800" },
+  metricsRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }, metricCard: { width: "32%", backgroundColor: "#161625", borderRadius: 14, padding: 13 }, metricValue: { fontSize: 23, fontWeight: "800" }, metricLabel: { color: "#8D8D9F", fontSize: 11, marginTop: 4 },
+  nextCard: { backgroundColor: "#342769", padding: 16, borderRadius: 16, marginBottom: 12 }, nextEyebrow: { color: "#BBA9F9", fontSize: 10, fontWeight: "800", letterSpacing: 1 }, nextTitle: { color: "white", fontSize: 18, fontWeight: "800", marginTop: 7 }, nextDetail: { color: "#D6CFFF", marginTop: 5 },
+  calendarCard: { backgroundColor: "#161625", borderRadius: 18, padding: 15 }, calendarTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, calendarTitle: { color: "white", fontSize: 17, fontWeight: "800", textTransform: "capitalize" }, arrowButton: { width: 35, height: 35, borderRadius: 10, backgroundColor: "#222237", alignItems: "center", justifyContent: "center" }, arrowText: { color: "white", fontSize: 24 },
+  viewToggle: { flexDirection: "row", marginTop: 13, marginBottom: 12 }, toggleButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9, marginRight: 7, backgroundColor: "#222237" }, toggleActive: { backgroundColor: "#7C4DFF" }, toggleText: { color: "#9999AE", fontWeight: "700", fontSize: 12 }, toggleTextActive: { color: "white" }, todayButton: { marginLeft: "auto", padding: 8 }, todayText: { color: "#A98BFF", fontWeight: "700" },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap" }, weekLabel: { width: "14.285%", color: "#6F6F83", textAlign: "center", fontWeight: "700", marginBottom: 8 }, dayCell: { width: "14.285%", minHeight: 43, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "transparent" }, daySelected: { backgroundColor: "#6845CE" }, dayToday: { borderColor: "#8F72E8" }, dayText: { color: "#D5D5E1", fontWeight: "700" }, dayMuted: { color: "#555568" }, daySelectedText: { color: "white" }, dots: { flexDirection: "row", height: 5, marginTop: 3 }, dot: { width: 4, height: 4, borderRadius: 2, marginHorizontal: 1 },
+  sectionTitle: { color: "white", fontSize: 19, fontWeight: "800", marginTop: 20, marginBottom: 10, textTransform: "capitalize" }, classesCard: { backgroundColor: "#151E1C", borderRadius: 15, padding: 14, marginBottom: 10 }, classesTitle: { color: "#78D7B0", fontWeight: "800", marginBottom: 5 }, classRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10 }, classColor: { width: 9, height: 36, borderRadius: 5, marginRight: 10 }, className: { color: "white", fontWeight: "700" }, classMode: { color: "#8EAAA0", fontSize: 12, marginTop: 3 }, openText: { color: "#71D2AA", fontWeight: "700", fontSize: 12 },
+  eventCard: { backgroundColor: "#161625", borderRadius: 14, borderLeftWidth: 5, marginBottom: 10, overflow: "hidden" }, eventMain: { padding: 15 }, eventHeader: { flexDirection: "row", alignItems: "flex-start" }, eventTitle: { color: "white", fontSize: 16, fontWeight: "700" }, subjectName: { color: "#AAA", marginTop: 5, fontSize: 13 }, timeLabel: { color: "#B9A8FF", fontWeight: "700", fontSize: 12 }, overdueLabel: { color: "#FFB74D" }, completeButton: { backgroundColor: "#123A2C", padding: 11 }, completeText: { color: "#58D39B", fontWeight: "800", textAlign: "center" },
+  emptyCard: { backgroundColor: "#161625", borderRadius: 16, padding: 24, alignItems: "center" }, emptyIcon: { fontSize: 34 }, emptyTitle: { color: "white", fontWeight: "800", fontSize: 18, marginTop: 9 }, emptyText: { color: "#8888AA", marginTop: 6 }, emptyButton: { backgroundColor: "#7C4DFF", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 10, marginTop: 15 }, emptyButtonText: { color: "white", fontWeight: "700" },
 } as const;

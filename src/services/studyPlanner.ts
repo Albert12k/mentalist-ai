@@ -1,418 +1,54 @@
-// ==================================================
-// 🧠 STUDY PLANNER
-// Primeiro sistema inteligente do Mentalis
-// Responsável por escolher o que estudar
-// ==================================================
+import { ClassDay, Subject } from "../types/Subject";
 
+export type StudyRecommendation = { subject: Subject; reason: string; priority: number };
 
-// =========================
-// 🎨 TIPOS
-// =========================
+const weekdayKeys: ClassDay[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-import { Subject } from "../types/Subject";
-
-
-
-
-// =========================
-// 📌 TIPO DO RESULTADO
-// =========================
-
-export type StudyRecommendation = {
-
-  // 📚 matéria recomendada
-  subject: Subject;
-
-
-  // 🧠 explicação da IA
-  reason: string;
-
-
-  // 📊 prioridade
-  priority: number;
-
-};
-
-function getDaysSinceLastStudy(lastStudied?: string): number | null {
-  if (!lastStudied) return null;
-
-  const lastStudiedTime = new Date(lastStudied).getTime();
-  if (Number.isNaN(lastStudiedTime)) return null;
-
-  return Math.max(0, Math.floor((Date.now() - lastStudiedTime) / 86_400_000));
+function daysSince(date?: string): number | undefined {
+  if (!date) return undefined;
+  const value = new Date(date).getTime();
+  return Number.isNaN(value) ? undefined : Math.max(0, Math.floor((Date.now() - value) / 86_400_000));
 }
 
-type UpcomingEvent = {
-  title: string;
-  daysUntil: number;
-};
-
-function getUpcomingEvent(subject: Subject): UpcomingEvent | null {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const upcomingEvents = subject.events
-    .map((event) => {
-      const eventDate = new Date(`${event.date}T12:00:00`);
-      const daysUntil = Math.round((eventDate.getTime() - today.getTime()) / 86_400_000);
-
-      return { title: event.title, daysUntil };
-    })
-    .filter((event) => !Number.isNaN(event.daysUntil) && event.daysUntil >= 0)
-    .sort((first, second) => first.daysUntil - second.daysUntil);
-
-  return upcomingEvents[0] ?? null;
+function nearestEvent(subject: Subject) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return subject.events.filter((event) => !event.completed).map((event) => ({ event, days: Math.round((new Date(`${event.date}T12:00:00`).getTime() - today.getTime()) / 86_400_000) })).filter((item) => item.days >= 0).sort((a, b) => a.days - b.days)[0];
 }
 
-
-
-
-
-// ==================================================
-// 🧠 CALCULAR PRIORIDADE
-// ==================================================
-
-function calculatePriority(
-  subject: Subject
-): number {
-
-
-  let score = 0;
-
-
-
-  // =========================
-  // 📊 RETENÇÃO
-  // =========================
-  // menor retenção = maior urgência
-
-  score +=
-    (100 - subject.retention) * 0.5;
-
-  // Matérias que nunca foram estudadas ou ficaram esquecidas precisam voltar
-  // ao plano. Esse valor passa a refletir as sessões registradas no app.
-  const daysSinceLastStudy = getDaysSinceLastStudy(subject.lastStudied);
-
-  if (daysSinceLastStudy === null) {
-    score += 15;
-  } else {
-    score += Math.min(daysSinceLastStudy * 3, 20);
-  }
-
-  const upcomingEvent = getUpcomingEvent(subject);
-
-  if (upcomingEvent) {
-    if (upcomingEvent.daysUntil <= 1) {
-      score += 25;
-    } else if (upcomingEvent.daysUntil <= 3) {
-      score += 20;
-    } else if (upcomingEvent.daysUntil <= 7) {
-      score += 12;
-    } else if (upcomingEvent.daysUntil <= 14) {
-      score += 5;
-    }
-  }
-
-
-
-
-  // =========================
-  // 🧠 DIFICULDADE
-  // =========================
-
-  if(subject.difficulty === "hard") {
-
-    score += 25;
-
-  }
-
-  else if(subject.difficulty === "medium") {
-
-    score += 15;
-
-  }
-
-  else {
-
-    score += 5;
-
-  }
-
-
-
-
-  // =========================
-  // 📅 FREQUÊNCIA
-  // =========================
-
-  if(subject.frequency === "daily") {
-
-    score += 15;
-
-  }
-
-  else if(subject.frequency === "three_times") {
-
-    score += 10;
-
-  }
-
-  else {
-
-    score += 5;
-
-  }
-
-
-
-
-  // =========================
-  // 🎯 OBJETIVO
-  // =========================
-
-  if(subject.goal === "exam") {
-
-    score += 20;
-
-  }
-
-  else if(subject.goal === "contest") {
-
-    score += 18;
-
-  }
-
-  else if(subject.goal === "career") {
-
-    score += 15;
-
-  }
-
-  else if(subject.goal === "college") {
-
-    score += 12;
-
-  }
-
-  else {
-
-    score += 5;
-
-  }
-
-
-
-
-  // limite máximo
-
-  return Math.min(
-    Math.round(score),
-    100
-  );
-
+// A prioridade usa somente informações que o estudante realmente registra:
+// calendário, prazos, conteúdos, faltas e histórico de estudo.
+export function generateStudyPlan(subjects: Subject[]): StudyRecommendation[] {
+  const todayClassDay = weekdayKeys[new Date().getDay()];
+  return subjects.map((subject) => {
+    const inactiveDays = daysSince(subject.lastStudied);
+    const upcoming = nearestEvent(subject);
+    const pendingContents = subject.contents.filter((content) => !content.completed).length;
+    let priority = 10;
+    if ((subject.classDays ?? []).includes(todayClassDay)) priority += 18;
+    if (inactiveDays === undefined) priority += 22;
+    else priority += Math.min(inactiveDays * 4, 24);
+    if (upcoming?.days === 0) priority += 35;
+    else if (upcoming && upcoming.days <= 3) priority += 25;
+    else if (upcoming && upcoming.days <= 7) priority += 14;
+    priority += Math.min(pendingContents * 3, 15);
+    priority += Math.min(subject.absences * 2, 8);
+    priority += Math.round((100 - subject.retention) * 0.12);
+
+    let reason = "Boa opção para manter sua rotina";
+    if (upcoming?.days === 0) reason = `${upcoming.event.title} vence hoje`;
+    else if (upcoming && upcoming.days <= 3) reason = `Prazo próximo: ${upcoming.event.title}`;
+    else if (inactiveDays === undefined) reason = "Você ainda não estudou esta matéria";
+    else if (inactiveDays >= 3) reason = `${inactiveDays} dias sem registrar estudo`;
+    else if ((subject.classDays ?? []).includes(todayClassDay)) reason = "Você tem aula desta matéria hoje";
+    else if (pendingContents) reason = `${pendingContents} conteúdo(s) pendente(s)`;
+
+    return { subject, reason, priority: Math.min(priority, 100) };
+  }).sort((a, b) => b.priority - a.priority);
 }
 
-
-
-
-
-
-
-// ==================================================
-// 🧠 GERAR PLANO DE ESTUDO
-// ==================================================
-
-export function generateStudyPlan(
-
-  subjects: Subject[]
-
-): StudyRecommendation[] {
-
-
-
-  return subjects
-
-    .map((subject) => {
-
-
-
-      const priority =
-        calculatePriority(subject);
-
-
-
-      let reason =
-        "Boa matéria para evolução";
-
-
-
-
-
-      // =========================
-      // 🔎 EXPLICAÇÃO DA IA
-      // =========================
-
-      const daysSinceLastStudy = getDaysSinceLastStudy(subject.lastStudied);
-      const upcomingEvent = getUpcomingEvent(subject);
-
-      if(upcomingEvent && upcomingEvent.daysUntil <= 3) {
-
-        reason =
-          `Prazo próximo: ${upcomingEvent.title}`;
-
-      }
-
-      else if(daysSinceLastStudy === null) {
-
-        reason =
-          "Você ainda não estudou esta matéria";
-
-      }
-
-      else if(daysSinceLastStudy >= 3) {
-
-        reason =
-          "Está há alguns dias sem revisão";
-
-      }
-
-      else if(subject.retention < 40) {
-
-
-        reason =
-          "Sua retenção está baixa";
-
-
-      }
-
-
-      else if(subject.difficulty === "hard") {
-
-
-        reason =
-          "Matéria considerada difícil";
-
-
-      }
-
-
-      else if(subject.goal === "exam") {
-
-
-        reason =
-          "Foco em preparação para prova";
-
-
-      }
-
-
-
-
-
-      return {
-
-
-        subject,
-
-
-        priority,
-
-
-        reason,
-
-
-      };
-
-
-    })
-
-
-    // 🔥 maior prioridade primeiro
-
-    .sort(
-
-      (a,b) =>
-        b.priority - a.priority
-
-    );
-
-}
-
-
-
-
-
-
-
-// ==================================================
-// 🧠 FILTRAR PLANO PELO MODO DE ESTUDO
-// ==================================================
-
-export function getStudyByMode(
-
-  plan: StudyRecommendation[],
-
-  mode:
-    | "manual"
-    | "guided"
-    | "auto"
-    | null
-
-): StudyRecommendation[] {
-
-
-
-  // =========================
-  // 📝 MANUAL
-  // Usuário escolhe sozinho
-  // =========================
-
-  if(mode === "manual") {
-
-    // No modo manual, mostramos todas as matérias para que a pessoa escolha
-    // livremente qual sessão deseja iniciar.
-    return plan;
-
-  }
-
-
-
-
-
-  // =========================
-  // 🧠 GUIADO
-  // IA recomenda poucas matérias
-  // =========================
-
-  if(mode === "guided") {
-
-    return plan.slice(0, 2);
-
-  }
-
-
-
-
-
-  // =========================
-  // 🤖 AUTOMÁTICO
-  // IA cria treino maior
-  // =========================
-
-  if(mode === "auto") {
-
-    return plan.slice(0, 5);
-
-  }
-
-
-
-
-
-  // =========================
-  // ❌ NENHUM MODO ESCOLHIDO
-  // =========================
-
+export function getStudyByMode(plan: StudyRecommendation[], mode: "manual" | "guided" | "auto" | null) {
+  if (mode === "manual") return plan;
+  if (mode === "guided") return plan.slice(0, 2);
+  if (mode === "auto") return plan.slice(0, 5);
   return [];
-
 }

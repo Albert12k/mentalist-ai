@@ -8,6 +8,7 @@ type EventType = SubjectEvent["type"];
 type Props = {
   visible: boolean;
   subjects: Subject[];
+  initialDate?: string;
   onClose: () => void;
   onSave: (subjectId: string, event: SubjectEvent) => void;
 };
@@ -26,7 +27,7 @@ function isValidDate(value: string) {
 
 // Este formulário existe na Agenda para que uma atividade possa ser criada
 // sem abrir uma matéria. A pessoa escolhe o destino antes de salvar.
-export default function QuickAddActivityModal({ visible, subjects, onClose, onSave }: Props) {
+export default function QuickAddActivityModal({ visible, subjects, initialDate, onClose, onSave }: Props) {
   const [subjectId, setSubjectId] = useState("");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -36,9 +37,9 @@ export default function QuickAddActivityModal({ visible, subjects, onClose, onSa
     if (!visible) return;
     setSubjectId(subjects[0]?.id ?? "");
     setTitle("");
-    setDate("");
+    setDate(initialDate ?? "");
     setType("assignment");
-  }, [visible, subjects]);
+  }, [visible, subjects, initialDate]);
 
   function handleSave() {
     if (!subjectId) {

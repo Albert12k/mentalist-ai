@@ -15,6 +15,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 
 import AddContentModal from "../components/AddContentModal";
+import AddAbsenceModal from "../components/AddAbsenceModal";
 import AddEventModal from "../components/AddEventModal";
 import AddFlashcardModal from "../components/AddFlashcardModal";
 import AudioRecorderModal from "../components/AudioRecorderModal";
@@ -27,6 +28,7 @@ import QuizPlayerModal from "../components/QuizPlayerModal";
 import StudySessionModal from "../components/StudySessionModal";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useProfile } from "../contexts/ProfileContext";
 import { classModeLabels, formatClassDays } from "../constants/subjectSchedule";
 import {
   deleteLocalMaterial,
@@ -55,12 +57,15 @@ import {
 import { recordStudySession } from "../services/studySession";
 import {
   Subject,
+  SubjectAbsence,
   SubjectContent,
   SubjectEvent,
   SubjectFlashcard,
   SubjectMaterial,
   SubjectQuiz,
 } from "../types/Subject";
+
+type SubjectSection = "overview" | "contents" | "materials" | "practice" | "activities";
 
 type StudySessionInput = {
   durationMinutes: number;
@@ -84,6 +89,7 @@ export default function SubjectDetailsScreen() {
   const routeSubject: Subject = route.params.subject;
   const { subjects, updateSubject } = useSubjects();
   const { userId } = useAuth();
+  const { profile } = useProfile();
   const [contentVisible, setContentVisible] = useState(false);
   const [eventVisible, setEventVisible] = useState(false);
   const [notesVisible, setNotesVisible] = useState(false);
@@ -102,12 +108,16 @@ export default function SubjectDetailsScreen() {
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
   const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [absenceVisible, setAbsenceVisible] = useState(false);
+  const [activeSection, setActiveSection] = useState<SubjectSection>("overview");
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
   const materials = subject.materials ?? [];
   const flashcards = subject.flashcards ?? [];
   const quizzes = subject.quizzes ?? [];
   const dueFlashcards = getDueFlashcards(flashcards);
+  const absenceRecords = subject.absenceRecords ?? [];
+  const legacyAbsences = Math.max(0, subject.absences - absenceRecords.length);
 
   function closeContentModal() {
     setContentVisible(false);
@@ -146,11 +156,8 @@ export default function SubjectDetailsScreen() {
     const savedEvent = { ...event, completed: existingEvent?.completed ?? false };
 
     try {
-      notificationIds = await scheduleActivityReminders(
-        savedEvent,
-        subject.name,
-        existingEvent?.notificationIds,
-      );
+      if (profile.remindersEnabled !== false) notificationIds = await scheduleActivityReminders(savedEvent, subject.name, existingEvent?.notificationIds);
+      else await cancelActivityReminders(existingEvent?.notificationIds);
     } catch {
       // A data ainda é salva; a Home continua mostrando o lembrete.
       Alert.alert("Atividade salva", "Não foi possível programar o alerta do dispositivo agora.");
@@ -172,13 +179,29 @@ export default function SubjectDetailsScreen() {
     setStudySessionVisible(false);
   }
 
-  function handleRegisterAbsence() {
-    updateSubject({ ...subject, absences: subject.absences + 1 });
+  function handleRegisterAbsence(date: string, note: string) {
+    const absence: SubjectAbsence = {
+      id: `absence-${Date.now()}`,
+      date,
+      ...(note ? { note } : {}),
+      createdAt: new Date().toISOString(),
+    };
+    updateSubject({
+      ...subject,
+      absences: subject.absences + 1,
+      absenceRecords: [...absenceRecords, absence],
+    });
+    setAbsenceVisible(false);
   }
 
-  function handleUndoAbsence() {
-    if (subject.absences === 0) return;
-    updateSubject({ ...subject, absences: subject.absences - 1 });
+  function handleDeleteAbsence(absence: SubjectAbsence) {
+    confirmRemoval(`Excluir a falta de ${formatEventDate(absence.date)}?`, () => {
+      updateSubject({
+        ...subject,
+        absences: Math.max(0, subject.absences - 1),
+        absenceRecords: absenceRecords.filter((item) => item.id !== absence.id),
+      });
+    });
   }
 
   function handleSaveNotes(notes: string) {
@@ -461,7 +484,8 @@ export default function SubjectDetailsScreen() {
 
     let notificationIds = event.notificationIds;
     try {
-      notificationIds = await scheduleActivityReminders({ ...event, completed: false }, subject.name, event.notificationIds);
+      if (profile.remindersEnabled !== false) notificationIds = await scheduleActivityReminders({ ...event, completed: false }, subject.name, event.notificationIds);
+      else { await cancelActivityReminders(event.notificationIds); notificationIds = []; }
     } catch {
       Alert.alert("Atividade reaberta", "A atividade voltou para a agenda, mas não foi possível programar alertas agora.");
     }
@@ -511,23 +535,38 @@ export default function SubjectDetailsScreen() {
           <Text style={styles.detail}>Aulas: {formatClassDays(subject.classDays ?? [])} • {classModeLabels[subject.classMode ?? "in_person"]}</Text>
         </View>
 
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+          <SectionTab label="Visão geral" active={activeSection === "overview"} onPress={() => setActiveSection("overview")} />
+          <SectionTab label="Conteúdos" active={activeSection === "contents"} onPress={() => setActiveSection("contents")} />
+          <SectionTab label="Materiais" active={activeSection === "materials"} onPress={() => setActiveSection("materials")} />
+          <SectionTab label="Prática" active={activeSection === "practice"} onPress={() => setActiveSection("practice")} />
+          <SectionTab label="Atividades" active={activeSection === "activities"} onPress={() => setActiveSection("activities")} />
+        </ScrollView>
+
+        {activeSection === "overview" ? <>
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Faltas em aulas</Text>
+          <SectionHeader title="Faltas em aulas" actionLabel="+ Registrar" onAction={() => setAbsenceVisible(true)} />
           <Text style={styles.absenceCount}>
             {subject.absences} falta{subject.absences === 1 ? "" : "s"} registrada{subject.absences === 1 ? "" : "s"}
           </Text>
-          <View style={styles.actionsRow}>
-            <ActionButton label="Registrar falta" color="#B35C00" onPress={handleRegisterAbsence} />
-            {subject.absences > 0 && (
-              <ActionButton label="Desfazer última" color="#263238" onPress={handleUndoAbsence} />
-            )}
-          </View>
+          {legacyAbsences > 0 ? <Text style={styles.legacyAbsence}>{legacyAbsences} registro(s) antigo(s), sem data.</Text> : null}
+          {absenceRecords.slice().sort((a, b) => b.date.localeCompare(a.date)).map((absence) => (
+            <View key={absence.id} style={styles.absenceItem}>
+              <View style={styles.absenceInfo}>
+                <Text style={styles.itemText}>{formatEventDate(absence.date)}</Text>
+                {absence.note ? <Text style={styles.itemDescription}>{absence.note}</Text> : null}
+              </View>
+              <ActionButton label="Excluir" color="#B00020" onPress={() => handleDeleteAbsence(absence)} />
+            </View>
+          ))}
         </View>
 
         <Pressable onPress={() => setStudySessionVisible(true)} style={styles.studyButton}>
           <Text style={styles.studyButtonText}>Registrar estudo</Text>
         </Pressable>
+        </> : null}
 
+        {activeSection === "contents" ?
         <View style={styles.section}>
           <SectionHeader
             title="Conteúdos"
@@ -567,8 +606,9 @@ export default function SubjectDetailsScreen() {
               </View>
             ))
           )}
-        </View>
+        </View> : null}
 
+        {activeSection === "materials" ?
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Materiais da matéria</Text>
           <Text style={styles.sectionHint}>
@@ -600,8 +640,9 @@ export default function SubjectDetailsScreen() {
               </View>
             ))
           )}
-        </View>
+        </View> : null}
 
+        {activeSection === "practice" ? <>
         <View style={styles.section}>
           <SectionHeader
             title="Flashcards"
@@ -675,7 +716,9 @@ export default function SubjectDetailsScreen() {
             ))
           )}
         </View>
+        </> : null}
 
+        {activeSection === "activities" ?
         <View style={styles.section}>
           <SectionHeader
             title="Datas importantes"
@@ -722,8 +765,9 @@ export default function SubjectDetailsScreen() {
                 </View>
               ))
           )}
-        </View>
+        </View> : null}
 
+        {activeSection === "overview" ? <>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Histórico de estudo</Text>
           {subject.studyHistory.length === 0 ? (
@@ -748,6 +792,7 @@ export default function SubjectDetailsScreen() {
           <ActionButton label={generatingSummary ? "IA resumindo..." : "Resumir com IA"} color="#5E35B1" onPress={() => void handleGenerateSummary()} />
           {subject.aiSummary ? <Text style={[styles.detail, { marginTop: 14 }]}>{subject.aiSummary}</Text> : null}
         </View>
+        </> : null}
       </ScrollView>
 
       <AddContentModal
@@ -755,6 +800,11 @@ export default function SubjectDetailsScreen() {
         content={editingContent}
         onClose={closeContentModal}
         onSubmit={handleContentSubmit}
+      />
+      <AddAbsenceModal
+        visible={absenceVisible}
+        onClose={() => setAbsenceVisible(false)}
+        onSave={handleRegisterAbsence}
       />
       <AddEventModal
         visible={eventVisible}
@@ -857,17 +907,33 @@ function ActionButton({ label, color, onPress }: { label: string; color: string;
   );
 }
 
+function SectionTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.tab, active && styles.activeTab]}>
+      <Text style={[styles.tabText, active && styles.activeTabText]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = {
   safeArea: { flex: 1, backgroundColor: "#080810" },
   content: { padding: 20, paddingBottom: 50 },
   back: { color: "#7C4DFF", fontSize: 16 },
   identityCard: { marginTop: 20, backgroundColor: "#161625", padding: 20, borderRadius: 16, borderLeftWidth: 6 },
+  tabs: { paddingTop: 18, paddingBottom: 2 },
+  tab: { backgroundColor: "#161625", borderWidth: 1, borderColor: "#303048", paddingVertical: 10, paddingHorizontal: 15, borderRadius: 20, marginRight: 9 },
+  activeTab: { backgroundColor: "#7C4DFF", borderColor: "#7C4DFF" },
+  tabText: { color: "#A6A6B8", fontWeight: "700" },
+  activeTabText: { color: "white" },
   card: { marginTop: 20, backgroundColor: "#161625", padding: 16, borderRadius: 16 },
   subjectName: { color: "white", fontSize: 28, fontWeight: "700" },
   description: { color: "#BBB", marginTop: 8 },
   sectionTitle: { color: "white", fontSize: 20, fontWeight: "700" },
   detail: { color: "#AAA", marginTop: 10 },
   absenceCount: { color: "#FFB74D", marginTop: 10, fontWeight: "700" },
+  legacyAbsence: { color: "#8E8EA3", marginTop: 6, fontSize: 12 },
+  absenceItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#10101D", padding: 12, borderRadius: 10, marginTop: 10 },
+  absenceInfo: { flex: 1, paddingRight: 10 },
   studyButton: { backgroundColor: "#7C4DFF", padding: 15, borderRadius: 12, marginTop: 20 },
   studyButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   section: { marginTop: 25 },

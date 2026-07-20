@@ -30,6 +30,7 @@ export function recordStudySession(
     date: studiedAt,
     duration: durationMinutes,
     xpEarned,
+    completedContent: input.completeContent,
     ...(input.contentId ? { contentId: input.contentId } : {}),
   };
 
@@ -47,4 +48,12 @@ export function recordStudySession(
       studyHistory: [...subject.studyHistory, session],
     },
   };
+}
+
+// Usado ao editar ou excluir uma sessão para que os indicadores derivados não
+// continuem contando um registro que já não existe.
+export function recalculateSubjectStudy(subject: Subject): Subject {
+  const orderedSessions = [...subject.studyHistory].sort((a, b) => a.date.localeCompare(b.date));
+  const retention = orderedSessions.reduce((value, session) => calculateRetentionAfterStudy(value, session.duration), 0);
+  return { ...subject, retention, lastStudied: orderedSessions.at(-1)?.date };
 }

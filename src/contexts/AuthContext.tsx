@@ -11,6 +11,7 @@ type AuthContextType = {
   signedIn: boolean;
   userId: string | null;
   displayName: string | undefined;
+  userEmail: string | undefined;
   isAdmin: boolean;
   continueInPreview: () => Promise<void>;
   signOutPreview: () => Promise<void>;
@@ -19,6 +20,7 @@ type AuthContextType = {
   resetPassword: (email: string) => Promise<string | null>;
   resendConfirmation: (email: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
+  updatePassword: (password: string) => Promise<string | null>;
 };
 
 const SESSION_KEY = "@mentalis:preview-session";
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [signedIn, setSignedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | undefined>();
+  const [userEmail, setUserEmail] = useState<string | undefined>();
   const [isAdmin, setIsAdmin] = useState(false);
 
   function applySession(session: Session | null) {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSignedIn(Boolean(session));
     setUserId(session?.user.id ?? null);
     setDisplayName(typeof session?.user.user_metadata?.name === "string" ? session.user.user_metadata.name : undefined);
+    setUserEmail(session?.user.email);
     setIsAdmin(appMetadata?.role === "admin" || appMetadata?.is_admin === true);
   }
 
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(SESSION_KEY);
     setSignedIn(false);
     setUserId(null);
+    setUserEmail(undefined);
     setIsAdmin(false);
   }
 
@@ -131,7 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return error?.message ?? null;
   }
 
-  return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, isAdmin, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle }}>{children}</AuthContext.Provider>;
+  async function updatePassword(password: string) {
+    if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+    const { error } = await supabase.auth.updateUser({ password });
+    return error?.message ?? null;
+  }
+
+  return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, userEmail, isAdmin, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle, updatePassword }}>{children}</AuthContext.Provider>;
 }
 
 function getWebRedirectUrl(): string | undefined {

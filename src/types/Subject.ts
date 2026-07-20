@@ -218,7 +218,19 @@ export type StudyHistory = {
   // em versões anteriores do aplicativo.
   contentId?: string;
 
+  // Permite recalcular o XP corretamente caso a sessão seja editada.
+  completedContent?: boolean;
 
+
+};
+
+// Registro individual de falta. O total continua separado para manter
+// compatibilidade com faltas salvas antes da inclusão de datas.
+export type SubjectAbsence = {
+  id: string;
+  date: string;
+  note?: string;
+  createdAt: string;
 };
 
 // ============================================
@@ -394,6 +406,9 @@ imagePath?: string;
 
   // Quantidade de faltas registradas pelo estudante nesta matéria.
   absences: number;
+
+  // Faltas mais recentes, identificadas por data e com observação opcional.
+  absenceRecords: SubjectAbsence[];
 
 
 

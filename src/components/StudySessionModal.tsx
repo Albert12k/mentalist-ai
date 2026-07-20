@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
 
 import { SubjectContent } from "../types/Subject";
+import { useProfile } from "../contexts/ProfileContext";
 
 type Props = {
   visible: boolean;
@@ -13,6 +14,7 @@ type Props = {
 type SessionMode = "timer" | "manual";
 
 export default function StudySessionModal({ visible, contents, onClose, onSave }: Props) {
+  const { profile } = useProfile();
   const [mode, setMode] = useState<SessionMode>("timer");
   const [duration, setDuration] = useState("25");
   const [timerMinutes, setTimerMinutes] = useState(25);
@@ -32,12 +34,13 @@ export default function StudySessionModal({ visible, contents, onClose, onSave }
     }
     setMode("timer");
     setDuration("25");
-    setTimerMinutes(25);
-    setRemainingSeconds(25 * 60);
+    const defaultMinutes = profile.defaultPomodoroMinutes ?? 25;
+    setTimerMinutes(defaultMinutes);
+    setRemainingSeconds(defaultMinutes * 60);
     setDeadline(null);
     setContentId(undefined);
     setCompleteContent(false);
-  }, [visible]);
+  }, [visible, profile.defaultPomodoroMinutes]);
 
   // O horário final evita que o cronômetro perca tempo quando a aba do
   // navegador fica em segundo plano e reduz a frequência dos intervalos.

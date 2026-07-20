@@ -44,6 +44,13 @@
           "defaultChannel": "activity-reminders"
         }
       ],
+      [
+        "expo-file-system",
+        {
+          "supportsOpeningDocumentsInPlace": true,
+          "enableFileSharing": true
+        }
+      ],
       "expo-sqlite"
     ]
   }

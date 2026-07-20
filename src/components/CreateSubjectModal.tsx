@@ -106,6 +106,7 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
       classMode,
       retention: 0,
       absences: 0,
+      absenceRecords: [],
       contents: [],
       materials: [],
       flashcards: [],
