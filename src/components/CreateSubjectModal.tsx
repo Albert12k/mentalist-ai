@@ -12,6 +12,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 import ColorPicker from "./ColorPicker";
+import { useAuth } from "../contexts/AuthContext";
+import { uploadUserAsset } from "../services/cloudStorage";
 import {
   Subject,
   SubjectDifficulty,
@@ -56,6 +58,7 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
   const [goal, setGoal] = useState<StudyGoal>("personal");
   const [frequency, setFrequency] = useState<StudyFrequency>("daily");
   const [image, setImage] = useState<string | undefined>();
+  const { userId } = useAuth();
 
   function resetForm() {
     setName("");
@@ -71,10 +74,22 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
     if (!visible) resetForm();
   }, [visible]);
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!name.trim()) {
       Alert.alert("Nome obrigatório", "Informe o nome da matéria.");
       return;
+    }
+
+    let imagePath: string | undefined;
+    let imageUrl = image;
+    try {
+      if (image && userId) {
+        const uploaded = await uploadUserAsset(userId, image, "subjects", "materia.jpg");
+        imagePath = uploaded.path;
+        imageUrl = uploaded.url;
+      }
+    } catch {
+      Alert.alert("Foto não enviada", "A matéria será criada, mas tente enviar a foto novamente depois.");
     }
 
     const subject: Subject = {
@@ -82,7 +97,8 @@ export default function CreateSubjectModal({ visible, onClose, onCreate }: Props
       name: name.trim(),
       description: description.trim(),
       color: selectedColor,
-      image,
+      image: imageUrl,
+      imagePath,
       difficulty,
       goal,
       frequency,

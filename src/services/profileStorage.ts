@@ -18,6 +18,7 @@ export async function getProfile(userId: string, defaultName?: string): Promise<
     return {
       name: savedProfile.name?.trim() || fallback.name,
       avatar: typeof savedProfile.avatar === "string" ? savedProfile.avatar : undefined,
+      avatarPath: typeof savedProfile.avatarPath === "string" ? savedProfile.avatarPath : undefined,
       weeklyGoalMinutes: Math.max(30, Math.min(savedProfile.weeklyGoalMinutes ?? fallback.weeklyGoalMinutes, 2_400)),
       bonusXP: Math.max(0, savedProfile.bonusXP ?? 0),
       claimedChallengeIds: Array.isArray(savedProfile.claimedChallengeIds)

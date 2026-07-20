@@ -15,6 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import ProgressBar from "../components/ProgressBar";
 import { useProfile } from "../contexts/ProfileContext";
 import { useAuth } from "../contexts/AuthContext";
+import { uploadUserAsset } from "../services/cloudStorage";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 
@@ -48,7 +49,7 @@ function calculateStreak(studyDates: Date[]): number {
 export default function ProfileScreen() {
   const { subjects } = useSubjects();
   const { profile, updateProfile } = useProfile();
-  const { signOutPreview } = useAuth();
+  const { signOutPreview, userId } = useAuth();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
   const [goalInput, setGoalInput] = useState(String(profile.weeklyGoalMinutes));
@@ -72,7 +73,15 @@ export default function ProfileScreen() {
 
   async function pickAvatar() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
-    if (!result.canceled) updateProfile({ ...profile, avatar: result.assets[0].uri });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    try {
+      if (!userId) throw new Error("Entre na sua conta antes de enviar uma foto.");
+      const uploaded = await uploadUserAsset(userId, asset.uri, "avatars", asset.fileName ?? "perfil.jpg", asset.mimeType ?? "image/jpeg");
+      updateProfile({ ...profile, avatar: uploaded.url, avatarPath: uploaded.path });
+    } catch {
+      Alert.alert("Não foi possível enviar", "Tente escolher outra foto ou confira se o Storage foi configurado no Supabase.");
+    }
   }
 
   function openEditor() {

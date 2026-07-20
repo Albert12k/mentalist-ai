@@ -331,6 +331,7 @@ export type Subject = {
   color: string;
 
 image?: string;
+imagePath?: string;
 
 
 

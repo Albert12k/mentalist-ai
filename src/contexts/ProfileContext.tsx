@@ -4,6 +4,7 @@ import { getProfile, saveProfile } from "../services/profileStorage";
 import { defaultUserProfile, UserProfile } from "../types/Profile";
 import { useAuth } from "./AuthContext";
 import { loadCloudProfile, saveCloudProfile } from "../services/cloudSync";
+import { getUserAssetUrl } from "../services/cloudStorage";
 
 type ProfileContextType = {
   profile: UserProfile;
@@ -23,6 +24,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       const localProfile = await getProfile(userId, displayName);
       const cloudProfile = await loadCloudProfile(userId);
       const profileToUse = cloudProfile ?? localProfile;
+      const cloudAvatarUrl = await getUserAssetUrl(profileToUse.avatarPath);
+      if (cloudAvatarUrl) profileToUse.avatar = cloudAvatarUrl;
       setProfile(profileToUse);
 
       // Uma conta que já tinha dados locais é enviada ao banco na primeira vez

@@ -3,6 +3,8 @@ export type UserProfile = {
   name: string;
   weeklyGoalMinutes: number;
   avatar?: string;
+  // Caminho permanente no Supabase Storage; a URL exibida pode expirar.
+  avatarPath?: string;
 
   // Recompensas de desafios ficam fora do histórico de uma matéria, mas
   // entram no XP total do usuário.

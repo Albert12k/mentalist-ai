@@ -5,6 +5,7 @@ import { hydrateMaterialForPlatform } from "../services/materials";
 import { getSubjects, saveSubjects } from "../services/subjectsStorage";
 import { Subject } from "../types/Subject";
 import { loadCloudSubjects, saveCloudSubjects } from "../services/cloudSync";
+import { getUserAssetUrl } from "../services/cloudStorage";
 
 type SubjectsContextType = {
   subjects: Subject[];
@@ -35,7 +36,8 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
       const saved = cloudSubjects ?? localSubjects;
       const hydrated = await Promise.all(saved.map(async (subject) => {
         const normalized = normalizeSubject(subject);
-        return { ...normalized, materials: await Promise.all(normalized.materials.map(hydrateMaterialForPlatform)) };
+        const cloudImageUrl = await getUserAssetUrl(normalized.imagePath);
+        return { ...normalized, ...(cloudImageUrl ? { image: cloudImageUrl } : {}), materials: await Promise.all(normalized.materials.map(hydrateMaterialForPlatform)) };
       }));
       if (active) setSubjects(hydrated);
       if (!cloudSubjects) void saveCloudSubjects(userId, saved);

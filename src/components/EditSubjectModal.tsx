@@ -12,6 +12,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 import ColorPicker from "./ColorPicker";
+import { useAuth } from "../contexts/AuthContext";
+import { uploadUserAsset } from "../services/cloudStorage";
 import { Subject, SubjectDifficulty, StudyFrequency, StudyGoal } from "../types/Subject";
 
 type Props = {
@@ -52,6 +54,7 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
   const [goal, setGoal] = useState<StudyGoal>(subject.goal);
   const [frequency, setFrequency] = useState<StudyFrequency>(subject.frequency);
   const [image, setImage] = useState(subject.image);
+  const { userId } = useAuth();
 
   useEffect(() => {
     setName(subject.name);
@@ -63,10 +66,22 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
     setImage(subject.image);
   }, [subject]);
 
-  function handleSave() {
+  async function handleSave() {
     if (!name.trim()) {
       Alert.alert("Nome obrigatório", "Informe o nome da matéria.");
       return;
+    }
+
+    let imagePath = subject.imagePath;
+    let imageUrl = image;
+    if (image && image !== subject.image && userId) {
+      try {
+        const uploaded = await uploadUserAsset(userId, image, "subjects", "materia.jpg");
+        imagePath = uploaded.path;
+        imageUrl = uploaded.url;
+      } catch {
+        Alert.alert("Foto não enviada", "As outras alterações serão salvas. Tente enviar a foto novamente depois.");
+      }
     }
 
     onSave({
@@ -74,7 +89,8 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
       name: name.trim(),
       description: description.trim(),
       color: selectedColor,
-      image,
+      image: imageUrl,
+      imagePath,
       difficulty,
       goal,
       frequency,
