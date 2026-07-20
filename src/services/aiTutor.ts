@@ -39,7 +39,17 @@ export async function generateAiSummary(subject: Subject): Promise<string | unde
 export async function extractMaterialText(assetUrl: string, mimeType: string): Promise<{ text?: string; error?: string }> {
   if (!supabase) return { error: "Conecte o Supabase para ler materiais com IA." };
   const { data, error } = await supabase.functions.invoke<{ extractedText?: string; error?: string }>("mentalis-ai", { body: { mode: "extract", assetUrl, mimeType } });
-  if (error) return { error: error.message || "Não foi possível chamar a IA." };
+  if (error) {
+    // Funções do Supabase podem devolver o detalhe em uma Response; tentamos
+    // lê-lo para que a tela mostre a causa em vez de um erro genérico.
+    const context = (error as { context?: { clone?: () => { json: () => Promise<{ error?: string }> } } }).context;
+    try {
+      const detail = context?.clone ? await context.clone().json() : undefined;
+      return { error: detail?.error ?? error.message ?? "Não foi possível chamar a IA." };
+    } catch {
+      return { error: error.message || "Não foi possível chamar a IA." };
+    }
+  }
   return { text: data?.extractedText?.trim(), error: data?.error };
 }
 
