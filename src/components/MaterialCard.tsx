@@ -80,6 +80,9 @@ export default function MaterialCard({ material, onDelete, onPreviewImage }: Pro
             {materialTypeLabels[material.type]} • {materialCategoryLabels[material.category]}
             {details ? ` • ${details}` : ""}
           </Text>
+          <Text style={[styles.syncStatus, material.storagePath ? styles.syncedStatus : styles.localStatus]}>
+            {material.storagePath ? "☁ Sincronizado" : "⌂ Salvo neste aparelho"}
+          </Text>
         </View>
       </View>
 
@@ -127,6 +130,9 @@ const styles = {
   titleArea: { flex: 1, marginLeft: 10 },
   title: { color: "white", fontWeight: "700", fontSize: 15 },
   meta: { color: "#9693A4", marginTop: 4, fontSize: 12 },
+  syncStatus: { marginTop: 5, fontSize: 11, fontWeight: "700" },
+  syncedStatus: { color: "#5FD49B" },
+  localStatus: { color: "#E5B65A" },
   actions: { flexDirection: "row", flexWrap: "wrap", marginTop: 12 },
   actionButton: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, marginRight: 8, marginBottom: 4 },
   actionText: { color: "white", fontWeight: "700", fontSize: 12 },

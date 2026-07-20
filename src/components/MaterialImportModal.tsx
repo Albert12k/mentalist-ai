@@ -17,7 +17,7 @@ type Props = {
   visible: boolean;
   draft: MaterialDraft | null;
   onClose: () => void;
-  onSave: (material: MaterialDraft) => void;
+  onSave: (material: MaterialDraft) => Promise<void>;
 };
 
 const categories = Object.keys(materialCategoryLabels) as SubjectMaterialCategory[];
@@ -27,6 +27,7 @@ const categories = Object.keys(materialCategoryLabels) as SubjectMaterialCategor
 export default function MaterialImportModal({ visible, draft, onClose, onSave }: Props) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<SubjectMaterialCategory>("lesson");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!visible || !draft) return;
@@ -35,7 +36,7 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
     setCategory(draft.category);
   }, [visible, draft]);
 
-  function handleSave() {
+  async function handleSave() {
     if (!draft) return;
 
     if (!title.trim()) {
@@ -43,7 +44,12 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
       return;
     }
 
-    onSave({ ...draft, title: title.trim(), category });
+    setSaving(true);
+    try {
+      await onSave({ ...draft, title: title.trim(), category });
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!draft) return null;
@@ -64,6 +70,7 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
           <TextInput
             value={title}
             onChangeText={setTitle}
+            editable={!saving}
             placeholder="Nome do material"
             placeholderTextColor="#666"
             style={styles.input}
@@ -77,6 +84,7 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
               return (
                 <Pressable
                   key={item}
+                  disabled={saving}
                   onPress={() => setCategory(item)}
                   style={[styles.categoryButton, active && styles.activeCategoryButton]}
                 >
@@ -88,10 +96,10 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
             })}
           </View>
 
-          <Pressable onPress={handleSave} style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Salvar na matéria</Text>
+          <Pressable disabled={saving} onPress={handleSave} style={[styles.saveButton, saving && styles.disabledButton]}>
+            <Text style={styles.saveButtonText}>{saving ? "Guardando material..." : "Salvar na matéria"}</Text>
           </Pressable>
-          <Pressable onPress={onClose} style={styles.cancelButton}>
+          <Pressable disabled={saving} onPress={onClose} style={styles.cancelButton}>
             <Text style={styles.cancelText}>Cancelar</Text>
           </Pressable>
         </ScrollView>
@@ -135,6 +143,7 @@ const styles = {
   categoryText: { color: "#BBB", fontWeight: "600" },
   activeCategoryText: { color: "white" },
   saveButton: { backgroundColor: "#00B86B", padding: 15, borderRadius: 12, marginTop: 28 },
+  disabledButton: { opacity: 0.65 },
   saveButtonText: { color: "white", textAlign: "center", fontWeight: "700" },
   cancelButton: { padding: 15, marginTop: 8 },
   cancelText: { color: "#888", textAlign: "center" },
