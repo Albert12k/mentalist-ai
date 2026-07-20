@@ -3,6 +3,7 @@ import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "reac
 import { useNavigation } from "@react-navigation/native";
 
 import { useSubjects } from "../contexts/SubjectsContext";
+import { askAiTutor } from "../services/aiTutor";
 import { buildTutorResponse, TutorMessage } from "../services/tutor";
 
 const suggestedQuestions = [
@@ -16,61 +17,50 @@ export default function TutorScreen() {
   const navigation = useNavigation<any>();
   const { subjects } = useSubjects();
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<TutorMessage[]>([
-    {
-      id: "welcome",
-      author: "tutor",
-      text: "Olá! Sou seu tutor de estudo. Posso usar suas matérias, sessões e prazos para orientar seu próximo passo.",
-    },
+    { id: "welcome", author: "tutor", text: "Olá! Sou seu tutor de estudo. Posso usar suas matérias, sessões e prazos para orientar seu próximo passo." },
   ]);
 
-  function sendMessage(question: string) {
+  async function sendMessage(question: string) {
     const trimmedQuestion = question.trim();
-    if (!trimmedQuestion) return;
+    if (!trimmedQuestion || loading) return;
 
-    const studentMessage: TutorMessage = {
-      id: `student-${Date.now()}`,
-      author: "student",
-      text: trimmedQuestion,
-    };
+    const studentMessage: TutorMessage = { id: `student-${Date.now()}`, author: "student", text: trimmedQuestion };
+    setMessages((currentMessages) => [...currentMessages, studentMessage]);
+    setInput("");
+    setLoading(true);
+
+    const result = await askAiTutor(trimmedQuestion, subjects);
     const tutorMessage: TutorMessage = {
       id: `tutor-${Date.now()}`,
       author: "tutor",
-      // A tela chama o serviço em vez de conter regras de estudo dentro do
-      // componente. Isso deixa a interface independente da lógica do tutor.
-      text: buildTutorResponse(trimmedQuestion, subjects),
+      // Mantém a orientação local enquanto a função ainda não estiver publicada.
+      text: result.answer ?? `${result.error ?? "A IA não está disponível agora."}\n\n${buildTutorResponse(trimmedQuestion, subjects)}`,
     };
-
-    setMessages((currentMessages) => [...currentMessages, studentMessage, tutorMessage]);
-    setInput("");
+    setMessages((currentMessages) => [...currentMessages, tutorMessage]);
+    setLoading(false);
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>Voltar</Text>
-        </Pressable>
+        <Pressable onPress={() => navigation.goBack()}><Text style={styles.back}>Voltar</Text></Pressable>
         <Text style={styles.title}>Tutor de estudo</Text>
-        <Text style={styles.subtitle}>Orientação offline baseada no seu progresso.</Text>
+        <Text style={styles.subtitle}>Orientação com IA baseada no seu progresso.</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false}>
         {messages.map((message) => (
-          <View
-            key={message.id}
-            style={message.author === "student" ? styles.studentMessage : styles.tutorMessage}
-          >
-            <Text style={message.author === "student" ? styles.studentText : styles.tutorText}>
-              {message.text}
-            </Text>
+          <View key={message.id} style={message.author === "student" ? styles.studentMessage : styles.tutorMessage}>
+            <Text style={message.author === "student" ? styles.studentText : styles.tutorText}>{message.text}</Text>
           </View>
         ))}
-
+        {loading ? <Text style={styles.thinking}>O Tutor está pensando…</Text> : null}
         <Text style={styles.suggestionsTitle}>Perguntas sugeridas</Text>
         <View style={styles.suggestions}>
           {suggestedQuestions.map((question) => (
-            <Pressable key={question} onPress={() => sendMessage(question)} style={styles.suggestionButton}>
+            <Pressable key={question} disabled={loading} onPress={() => void sendMessage(question)} style={styles.suggestionButton}>
               <Text style={styles.suggestionText}>{question}</Text>
             </Pressable>
           ))}
@@ -78,16 +68,9 @@ export default function TutorScreen() {
       </ScrollView>
 
       <View style={styles.composer}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder="Escreva sua pergunta"
-          placeholderTextColor="#666"
-          multiline
-          style={styles.input}
-        />
-        <Pressable onPress={() => sendMessage(input)} style={styles.sendButton}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
+        <TextInput value={input} onChangeText={setInput} editable={!loading} placeholder="Escreva sua pergunta" placeholderTextColor="#666" multiline style={styles.input} />
+        <Pressable disabled={loading} onPress={() => void sendMessage(input)} style={[styles.sendButton, loading && styles.sendButtonDisabled]}>
+          <Text style={styles.sendButtonText}>{loading ? "..." : "Enviar"}</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -105,6 +88,7 @@ const styles = {
   studentMessage: { alignSelf: "flex-end", backgroundColor: "#563BB0", borderRadius: 14, padding: 12, maxWidth: "88%", marginBottom: 10 },
   tutorText: { color: "#E8E8F2", lineHeight: 20 },
   studentText: { color: "white", lineHeight: 20 },
+  thinking: { color: "#B8A5FF", fontStyle: "italic", marginBottom: 12 },
   suggestionsTitle: { color: "#AAA", fontWeight: "700", marginTop: 14, marginBottom: 8 },
   suggestions: { flexDirection: "row", flexWrap: "wrap" },
   suggestionButton: { backgroundColor: "#263238", borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11, marginRight: 8, marginBottom: 8 },
@@ -112,5 +96,6 @@ const styles = {
   composer: { flexDirection: "row", padding: 12, backgroundColor: "#0D0D16", borderTopWidth: 1, borderTopColor: "#1A1A2E", alignItems: "flex-end" },
   input: { flex: 1, backgroundColor: "#161625", color: "white", padding: 11, borderRadius: 12, maxHeight: 100, textAlignVertical: "top" },
   sendButton: { backgroundColor: "#7C4DFF", paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, marginLeft: 8 },
+  sendButtonDisabled: { opacity: 0.65 },
   sendButtonText: { color: "white", fontWeight: "700" },
 } as const;
