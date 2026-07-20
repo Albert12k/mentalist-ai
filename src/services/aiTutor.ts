@@ -36,10 +36,11 @@ export async function generateAiSummary(subject: Subject): Promise<string | unde
   return result.answer;
 }
 
-export async function extractMaterialText(assetUrl: string, mimeType: string): Promise<string | undefined> {
-  if (!supabase) return undefined;
-  const { data } = await supabase.functions.invoke<{ extractedText?: string }>("mentalis-ai", { body: { mode: "extract", assetUrl, mimeType } });
-  return data?.extractedText?.trim() || undefined;
+export async function extractMaterialText(assetUrl: string, mimeType: string): Promise<{ text?: string; error?: string }> {
+  if (!supabase) return { error: "Conecte o Supabase para ler materiais com IA." };
+  const { data, error } = await supabase.functions.invoke<{ extractedText?: string; error?: string }>("mentalis-ai", { body: { mode: "extract", assetUrl, mimeType } });
+  if (error) return { error: error.message || "Não foi possível chamar a IA." };
+  return { text: data?.extractedText?.trim(), error: data?.error };
 }
 
 async function askAssessment(mode: "quiz" | "flashcards", subject: Subject): Promise<string | undefined> {

@@ -285,7 +285,8 @@ export default function SubjectDetailsScreen() {
           draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"),
         );
         storagePath = uploaded.path;
-        extractedText = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"));
+        const extraction = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"));
+        extractedText = extraction.text;
         if (!extractedText) extractionError = "A IA não retornou texto.";
       } catch {
         Alert.alert("Salvo neste aparelho", "Não foi possível enviar este material agora. Ele continua salvo localmente.");
@@ -311,8 +312,9 @@ export default function SubjectDetailsScreen() {
   }
 
   async function handleExtractMaterial(material: SubjectMaterial) {
-    const text = await extractMaterialText(material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
-    updateSubject({ ...subject, materials: materials.map((item) => item.id === material.id ? { ...item, ...(text ? { extractedText: text, extractedAt: new Date().toISOString(), extractionError: undefined } : { extractionError: "A IA não retornou texto." }) } : item) });
+    const result = await extractMaterialText(material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
+    if (result.error) Alert.alert("Leitura com IA", result.error);
+    updateSubject({ ...subject, materials: materials.map((item) => item.id === material.id ? { ...item, ...(result.text ? { extractedText: result.text, extractedAt: new Date().toISOString(), extractionError: undefined } : { extractionError: result.error ?? "A IA não retornou texto." }) } : item) });
   }
 
   function handleSaveFlashcard(flashcard: SubjectFlashcard) {
