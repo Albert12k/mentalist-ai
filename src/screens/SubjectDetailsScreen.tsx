@@ -281,7 +281,7 @@ export default function SubjectDetailsScreen() {
           draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"),
         );
         storagePath = uploaded.path;
-        if (draft.type !== "audio") extractedText = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : "image/jpeg"));
+        extractedText = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"));
       } catch {
         Alert.alert("Salvo neste aparelho", "Não foi possível enviar este material agora. Ele continua salvo localmente.");
       }

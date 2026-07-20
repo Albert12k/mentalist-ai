@@ -31,6 +31,14 @@ Deno.serve(async (request) => {
       const file = new File([await asset.blob()], "material", { type: mimeType });
       const form = new FormData();
       form.append("file", file);
+      if (mimeType.startsWith("audio/")) {
+        form.append("model", "gpt-4o-mini-transcribe");
+        form.append("language", "pt");
+        const transcription = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
+        const transcriptionData = await transcription.json();
+        if (!transcription.ok || !transcriptionData.text) return Response.json({ error: "Não foi possível transcrever o áudio." }, { status: 502, headers: corsHeaders });
+        return Response.json({ extractedText: transcriptionData.text }, { headers: corsHeaders });
+      }
       form.append("purpose", "user_data");
       const uploaded = await fetch("https://api.openai.com/v1/files", { method: "POST", headers: { Authorization: `Bearer ${apiKey}` }, body: form });
       const uploadedData = await uploaded.json();
