@@ -430,6 +430,10 @@ imagePath?: string;
 
   notes: string;
 
+  // Resumo criado pela IA a partir dos conteúdos e materiais da matéria.
+  aiSummary?: string;
+  aiSummaryUpdatedAt?: string;
+
 
 
 

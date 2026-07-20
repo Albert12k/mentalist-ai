@@ -99,7 +99,6 @@ export default function SubjectDetailsScreen() {
   const [textMaterial, setTextMaterial] = useState<SubjectMaterial | null>(null);
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
   const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
@@ -318,7 +317,11 @@ export default function SubjectDetailsScreen() {
     setGeneratingSummary(true);
     const result = await generateAiSummary(subject);
     setGeneratingSummary(false);
-    setSummary(result ?? "Não foi possível gerar o resumo agora. Tente novamente mais tarde.");
+    if (!result) {
+      Alert.alert("Resumo indisponível", "Não foi possível gerar o resumo agora. Tente novamente mais tarde.");
+      return;
+    }
+    updateSubject({ ...subject, aiSummary: result, aiSummaryUpdatedAt: new Date().toISOString() });
   }
 
   async function handleGenerateFlashcards() {
@@ -735,7 +738,7 @@ export default function SubjectDetailsScreen() {
           <SectionHeader title="Anotações" actionLabel="Editar" onAction={() => setNotesVisible(true)} />
           <Text style={styles.detail}>{subject.notes || "Nenhuma anotação ainda."}</Text>
           <ActionButton label={generatingSummary ? "IA resumindo..." : "Resumir com IA"} color="#5E35B1" onPress={() => void handleGenerateSummary()} />
-          {summary ? <Text style={[styles.detail, { marginTop: 14 }]}>{summary}</Text> : null}
+          {subject.aiSummary ? <Text style={[styles.detail, { marginTop: 14 }]}>{subject.aiSummary}</Text> : null}
         </View>
       </ScrollView>
 
