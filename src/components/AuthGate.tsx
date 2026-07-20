@@ -19,10 +19,15 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [loading, signedIn]);
 
-  if (loading || view === "splash") {
+  // Uma sessão já existente deve abrir o app imediatamente. Antes desta ordem,
+  // a splash continuava visível quando havia uma sessão de teste salva.
+  if (loading) {
     return <SafeAreaView style={styles.splash}><Text style={styles.logo}>M</Text><Text style={styles.brand}>Mentalis</Text><Text style={styles.tagline}>Seu estudo, com direção.</Text></SafeAreaView>;
   }
   if (signedIn) return <>{children}</>;
+  if (view === "splash") {
+    return <SafeAreaView style={styles.splash}><Text style={styles.logo}>M</Text><Text style={styles.brand}>Mentalis</Text><Text style={styles.tagline}>Seu estudo, com direção.</Text></SafeAreaView>;
+  }
 
   function validateFields(needsName = false) {
     if (needsName && !name.trim()) { Alert.alert("Nome obrigatório", "Informe seu nome para criar a conta."); return false; }
