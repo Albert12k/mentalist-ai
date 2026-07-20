@@ -20,6 +20,8 @@ import { uploadUserAsset } from "../services/cloudStorage";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getLevelProgress, getTotalXP } from "../services/xpSystem";
 import { getPlanDefinition } from "../services/plans";
+import { buildAchievementBadges, themeRewards } from "../services/rewards";
+import { buildStudyActivity } from "../services/studyActivity";
 
 function getDayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -74,6 +76,9 @@ export default function ProfileScreen() {
   const totalContents = subjects.reduce((total, subject) => total + subject.contents.length, 0);
   const initial = profile.name.trim().charAt(0).toUpperCase() || "E";
   const currentPlan = getPlanDefinition(profile);
+  const activity = buildStudyActivity(subjects, profile.streakFreezeDates);
+  const unlockedBadges = buildAchievementBadges({ subjects: subjects.length, sessions: studySessions.length, completedContents, currentStreak: activity.currentStreak }).filter((badge) => badge.unlocked);
+  const selectedTheme = themeRewards.find((theme) => theme.id === (profile.selectedTheme ?? "purple")) ?? themeRewards[0];
 
   async function pickAvatar() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
@@ -113,17 +118,23 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { borderColor: selectedTheme.color }]}>
           <View style={styles.heroTop}>
             <Pressable onPress={pickAvatar} style={styles.avatar}>{profile.avatar ? <Image source={{ uri: profile.avatar }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{initial}</Text>}</Pressable>
             <View><Pressable onPress={pickAvatar} style={styles.photoButton}><Text style={styles.editButtonText}>Foto</Text></Pressable><Pressable onPress={openEditor} style={styles.editButton}><Text style={styles.editButtonText}>Editar perfil</Text></Pressable></View>
           </View>
           <Text style={styles.name}>{profile.name}</Text>
+          {profile.selectedTitle ? <Text style={styles.profileTitle}>✦ {profile.selectedTitle}</Text> : null}
           <Text style={styles.heroSubtitle}>Nível {levelProgress.level} • {totalXP} XP acumulado</Text>
           <View style={styles.levelTrack}>
             <View style={[styles.levelFill, { width: `${levelProgress.progressPercent}%` }]} />
           </View>
           <Text style={styles.levelHint}>{levelProgress.progressPercent}% até o próximo nível</Text>
+        </View>
+
+        <View style={styles.showcaseCard}>
+          <View style={styles.cardHeader}><Text style={styles.cardTitle}>Vitrine de conquistas</Text><Text style={styles.showcaseCount}>{unlockedBadges.length} medalhas</Text></View>
+          {unlockedBadges.length ? <View style={styles.showcaseRow}>{unlockedBadges.slice(0, 4).map((badge) => <View key={badge.id} style={styles.showcaseBadge}><Text style={styles.showcaseIcon}>{badge.icon}</Text><Text style={styles.showcaseName}>{badge.title}</Text></View>)}</View> : <Text style={styles.cardDescription}>Use o app e registre seus estudos para conquistar suas primeiras medalhas.</Text>}
         </View>
 
         <View style={styles.goalCard}>
@@ -225,11 +236,18 @@ const styles = {
   editButton: { backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10 },
   editButtonText: { color: "white", fontWeight: "700", fontSize: 12 },
   name: { color: "white", fontSize: 29, fontWeight: "800", marginTop: 14 },
+  profileTitle: { color: "#FFD76A", fontWeight: "700", marginTop: 5 },
   heroSubtitle: { color: "#D2C8FF", marginTop: 5 },
   levelTrack: { height: 8, backgroundColor: "#17112F", borderRadius: 4, overflow: "hidden", marginTop: 18 },
   levelFill: { height: "100%", backgroundColor: "#B9A8FF", borderRadius: 4 },
   levelHint: { color: "#D2C8FF", marginTop: 7, fontSize: 12 },
   goalCard: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginBottom: 16 },
+  showcaseCard: { backgroundColor: "#161625", borderRadius: 16, padding: 16, marginBottom: 16 },
+  showcaseCount: { color: "#B9A8FF", fontWeight: "700", fontSize: 12 },
+  showcaseRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 13 },
+  showcaseBadge: { width: "48%", backgroundColor: "#222236", borderRadius: 12, padding: 11, marginRight: "2%", marginBottom: 8, flexDirection: "row", alignItems: "center" },
+  showcaseIcon: { fontSize: 21, marginRight: 8 },
+  showcaseName: { color: "white", fontWeight: "700", fontSize: 12, flex: 1 },
   planCard: { backgroundColor: "#211943", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#5E46A8" },
   planEyebrow: { color: "#B9A8FF", fontSize: 11, fontWeight: "800", letterSpacing: 1, marginBottom: 5 },
   planBadge: { color: "#FFF", backgroundColor: "#6741D9", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, fontWeight: "800" },

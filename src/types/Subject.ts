@@ -46,6 +46,12 @@ export type StudyFrequency =
   | "three_times"
   | "weekend";
 
+// Dias em que o estudante realmente tem aula desta matéria.
+export type ClassDay = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+
+// Funciona para escolas, cursos e faculdades sem depender do nível de ensino.
+export type ClassMode = "in_person" | "remote";
+
 
 
 
@@ -363,6 +369,10 @@ imagePath?: string;
 
 
   frequency: StudyFrequency;
+
+  classDays: ClassDay[];
+
+  classMode: ClassMode;
 
 
 

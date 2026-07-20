@@ -27,6 +27,7 @@ import QuizPlayerModal from "../components/QuizPlayerModal";
 import StudySessionModal from "../components/StudySessionModal";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { useAuth } from "../contexts/AuthContext";
+import { classModeLabels, formatClassDays } from "../constants/subjectSchedule";
 import {
   deleteLocalMaterial,
   formatMaterialDate,
@@ -507,13 +508,7 @@ export default function SubjectDetailsScreen() {
           <Text style={styles.subjectName}>{subject.name}</Text>
           {subject.description ? <Text style={styles.description}>{subject.description}</Text> : null}
           <Text style={styles.detail}>Retenção: {subject.retention}%</Text>
-          <Text style={styles.detail}>Dificuldade: {subject.difficulty}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Configuração</Text>
-          <Text style={styles.detail}>Objetivo: {subject.goal}</Text>
-          <Text style={styles.detail}>Frequência: {subject.frequency}</Text>
+          <Text style={styles.detail}>Aulas: {formatClassDays(subject.classDays ?? [])} • {classModeLabels[subject.classMode ?? "in_person"]}</Text>
         </View>
 
         <View style={styles.card}>

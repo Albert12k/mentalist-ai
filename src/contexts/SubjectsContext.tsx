@@ -18,7 +18,7 @@ type SubjectsContextType = {
 const SubjectsContext = createContext<SubjectsContextType | null>(null);
 
 function normalizeSubject(subject: Subject): Subject {
-  return { ...subject, contents: subject.contents ?? [], materials: subject.materials ?? [], flashcards: subject.flashcards ?? [], quizzes: subject.quizzes ?? [], events: subject.events ?? [], notes: subject.notes ?? "", studyHistory: subject.studyHistory ?? [], absences: subject.absences ?? 0 };
+  return { ...subject, classDays: subject.classDays ?? [], classMode: subject.classMode ?? "in_person", contents: subject.contents ?? [], materials: subject.materials ?? [], flashcards: subject.flashcards ?? [], quizzes: subject.quizzes ?? [], events: subject.events ?? [], notes: subject.notes ?? "", studyHistory: subject.studyHistory ?? [], absences: subject.absences ?? 0 };
 }
 
 // As matérias ficam separadas pela identificação da conta. Assim, quando uma

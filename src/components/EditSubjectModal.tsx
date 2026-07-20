@@ -12,9 +12,10 @@ import {
 import * as ImagePicker from "expo-image-picker";
 
 import ColorPicker from "./ColorPicker";
+import { classDayOptions } from "../constants/subjectSchedule";
 import { useAuth } from "../contexts/AuthContext";
 import { uploadUserAsset } from "../services/cloudStorage";
-import { Subject, SubjectDifficulty, StudyFrequency, StudyGoal } from "../types/Subject";
+import { ClassDay, ClassMode, Subject } from "../types/Subject";
 
 type Props = {
   visible: boolean;
@@ -50,9 +51,8 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
   const [name, setName] = useState(subject.name);
   const [description, setDescription] = useState(subject.description ?? "");
   const [selectedColor, setSelectedColor] = useState(subject.color);
-  const [difficulty, setDifficulty] = useState<SubjectDifficulty>(subject.difficulty);
-  const [goal, setGoal] = useState<StudyGoal>(subject.goal);
-  const [frequency, setFrequency] = useState<StudyFrequency>(subject.frequency);
+  const [classDays, setClassDays] = useState<ClassDay[]>(subject.classDays ?? []);
+  const [classMode, setClassMode] = useState<ClassMode>(subject.classMode ?? "in_person");
   const [image, setImage] = useState(subject.image);
   const { userId } = useAuth();
 
@@ -60,15 +60,18 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
     setName(subject.name);
     setDescription(subject.description ?? "");
     setSelectedColor(subject.color);
-    setDifficulty(subject.difficulty);
-    setGoal(subject.goal);
-    setFrequency(subject.frequency);
+    setClassDays(subject.classDays ?? []);
+    setClassMode(subject.classMode ?? "in_person");
     setImage(subject.image);
   }, [subject]);
 
   async function handleSave() {
     if (!name.trim()) {
       Alert.alert("Nome obrigatório", "Informe o nome da matéria.");
+      return;
+    }
+    if (!classDays.length) {
+      Alert.alert("Selecione os dias", "Informe pelo menos um dia em que você tem aula desta matéria.");
       return;
     }
 
@@ -91,15 +94,18 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
       color: selectedColor,
       image: imageUrl,
       imagePath,
-      difficulty,
-      goal,
-      frequency,
+      classDays,
+      classMode,
     });
   }
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
     if (!result.canceled) setImage(result.assets[0].uri);
+  }
+
+  function toggleClassDay(day: ClassDay) {
+    setClassDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day]);
   }
 
   return (
@@ -126,27 +132,16 @@ export default function EditSubjectModal({ visible, onClose, subject, onSave }: 
             <Text style={{ color: "white", textAlign: "center", fontWeight: "700" }}>{image ? "Trocar foto da matéria" : "+ Adicionar foto da matéria"}</Text>
           </Pressable>
 
-          <Text style={labelStyle}>Dificuldade</Text>
-          <View style={optionRowStyle}>
-            <OptionButton label="Fácil" active={difficulty === "easy"} onPress={() => setDifficulty("easy")} />
-            <OptionButton label="Médio" active={difficulty === "medium"} onPress={() => setDifficulty("medium")} />
-            <OptionButton label="Difícil" active={difficulty === "hard"} onPress={() => setDifficulty("hard")} />
-          </View>
-
-          <Text style={labelStyle}>Objetivo</Text>
+          <Text style={labelStyle}>Dias de aula</Text>
+          <Text style={helperStyle}>Selecione todos os dias em que essa matéria acontece.</Text>
           <View style={[optionRowStyle, { flexWrap: "wrap" }]}>
-            <OptionButton label="Prova" active={goal === "exam"} onPress={() => setGoal("exam")} />
-            <OptionButton label="Faculdade" active={goal === "college"} onPress={() => setGoal("college")} />
-            <OptionButton label="Concurso" active={goal === "contest"} onPress={() => setGoal("contest")} />
-            <OptionButton label="Carreira" active={goal === "career"} onPress={() => setGoal("career")} />
-            <OptionButton label="Pessoal" active={goal === "personal"} onPress={() => setGoal("personal")} />
+            {classDayOptions.map((day) => <OptionButton key={day.value} label={day.shortLabel} active={classDays.includes(day.value)} onPress={() => toggleClassDay(day.value)} />)}
           </View>
 
-          <Text style={labelStyle}>Frequência</Text>
+          <Text style={labelStyle}>Tipo de aula</Text>
           <View style={optionRowStyle}>
-            <OptionButton label="Diário" active={frequency === "daily"} onPress={() => setFrequency("daily")} />
-            <OptionButton label="3x semana" active={frequency === "three_times"} onPress={() => setFrequency("three_times")} />
-            <OptionButton label="Fim de semana" active={frequency === "weekend"} onPress={() => setFrequency("weekend")} />
+            <OptionButton label="Presencial" active={classMode === "in_person"} onPress={() => setClassMode("in_person")} />
+            <OptionButton label="Remota" active={classMode === "remote"} onPress={() => setClassMode("remote")} />
           </View>
 
           <Pressable onPress={handleSave} style={saveButtonStyle}>
@@ -177,6 +172,13 @@ const labelStyle = {
 
 const optionRowStyle = {
   flexDirection: "row",
+} as const;
+
+const helperStyle = {
+  color: "#77778F",
+  marginBottom: 10,
+  marginTop: -2,
+  fontSize: 12,
 } as const;
 
 const saveButtonStyle = {

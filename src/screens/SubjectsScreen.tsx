@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import CreateSubjectModal from "../components/CreateSubjectModal";
 import EditSubjectModal from "../components/EditSubjectModal";
+import { classModeLabels, formatClassDays } from "../constants/subjectSchedule";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { Subject } from "../types/Subject";
 
@@ -123,7 +124,7 @@ export default function SubjectsScreen() {
                 {subject.image ? <Image source={{ uri: subject.image }} style={styles.subjectImage} /> : null}
                 <Text style={styles.subjectName}>{subject.name}</Text>
                 <Text style={styles.detail}>Retenção: {subject.retention}%</Text>
-                <Text style={styles.detail}>Dificuldade: {subject.difficulty}</Text>
+                <Text style={styles.detail}>Aulas: {formatClassDays(subject.classDays ?? [])} • {classModeLabels[subject.classMode ?? "in_person"]}</Text>
                 <Text style={styles.absenceCount}>Faltas registradas: {subject.absences}</Text>
               </Pressable>
 

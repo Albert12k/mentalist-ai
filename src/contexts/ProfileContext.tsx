@@ -19,6 +19,8 @@ function normalizeProfile(profile: UserProfile): UserProfile {
     ...defaultUserProfile,
     ...profile,
     claimedChallengeIds: profile.claimedChallengeIds ?? [],
+    streakFreezeDates: profile.streakFreezeDates ?? [],
+    selectedTheme: profile.selectedTheme ?? "purple",
     plan: profile.plan ?? "free",
   };
 }

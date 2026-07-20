@@ -24,6 +24,9 @@ export async function getProfile(userId: string, defaultName?: string): Promise<
       claimedChallengeIds: Array.isArray(savedProfile.claimedChallengeIds)
         ? savedProfile.claimedChallengeIds.filter((id): id is string => typeof id === "string")
         : [],
+      selectedTitle: typeof savedProfile.selectedTitle === "string" ? savedProfile.selectedTitle : undefined,
+      selectedTheme: savedProfile.selectedTheme === "emerald" || savedProfile.selectedTheme === "sunset" ? savedProfile.selectedTheme : "purple",
+      streakFreezeDates: Array.isArray(savedProfile.streakFreezeDates) ? savedProfile.streakFreezeDates.filter((date): date is string => typeof date === "string") : [],
       plan: savedProfile.plan === "pro" ? "pro" : "free",
       subscriptionStatus: savedProfile.subscriptionStatus ?? "inactive",
     };
