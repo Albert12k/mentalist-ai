@@ -9,11 +9,12 @@ const corsHeaders = {
 
 type RequestBody = { question?: string; studyContext?: string; assetUrl?: string; mimeType?: string; mode?: "tutor" | "quiz" | "flashcards" | "extract" };
 
-function getOutputText(response: { output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
-  return response.output?.flatMap((item) => item.content ?? [])
+function getOutputText(response: { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }> }): string {
+  const nestedText = response.output?.flatMap((item) => item.content ?? [])
     // Alguns retornos de arquivo usam outro tipo de bloco, mas ainda trazem
     // o texto no mesmo campo. Aceitamos qualquer bloco textual válido.
     .map((content) => content.text ?? "").filter(Boolean).join("").trim() ?? "";
+  return nestedText || response.output_text?.trim() || "";
 }
 
 Deno.serve(async (request) => {
