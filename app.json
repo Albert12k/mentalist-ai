@@ -51,7 +51,9 @@
           "enableFileSharing": true
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-status-bar",
+      "expo-asset"
     ]
   }
 }
