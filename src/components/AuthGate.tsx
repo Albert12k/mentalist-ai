@@ -19,7 +19,7 @@ function GoogleLogo() {
 }
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const { loading, signedIn, continueInPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle } = useAuth();
+  const { signedIn, continueInPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle } = useAuth();
   const [view, setView] = useState<ViewMode>("splash");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,23 +28,17 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [confirmationEmail, setConfirmationEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [splashTimeoutReached, setSplashTimeoutReached] = useState(false);
 
-  // Proteção independente da camada de autenticação: a splash é somente uma
-  // apresentação visual e nunca deve impedir a pessoa de chegar ao login.
+  // A splash é apenas uma apresentação visual. Ela não espera a rede nem o
+  // Supabase, então uma sessão lenta nunca consegue prender o usuário aqui.
   useEffect(() => {
-    const timer = setTimeout(() => setSplashTimeoutReached(true), 4500);
+    if (signedIn) return;
+    const timer = setTimeout(() => setView("login"), 1600);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if ((loading && !splashTimeoutReached) || signedIn) return;
-    const timer = setTimeout(() => setView("login"), 900);
-    return () => clearTimeout(timer);
-  }, [loading, signedIn, splashTimeoutReached]);
+  }, [signedIn]);
 
   if (signedIn) return <>{children}</>;
-  if ((loading && !splashTimeoutReached) || view === "splash") return <Splash />;
+  if (view === "splash") return <Splash />;
 
   function validate(needsName = false) {
     if (needsName && !name.trim()) { setFeedback("Informe seu nome para criar a conta."); return false; }

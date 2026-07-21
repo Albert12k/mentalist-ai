@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 
 import { Subject, SubjectEvent } from "../types/Subject";
 
@@ -12,6 +12,17 @@ export type ActivityReminder = {
 };
 
 let notificationDisplayConfigured = false;
+
+// O Expo Go não inclui mais o suporte nativo necessário para notificações no
+// Android. Carregar expo-notifications nele interrompe a abertura do app, por
+// isso o módulo só é importado em uma build própria do Trilume.
+async function getNotifications() {
+  if (Platform.OS === "web" || Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    return null;
+  }
+
+  return import("expo-notifications");
+}
 
 function isReminderEvent(event: SubjectEvent): boolean {
   // Atividades e provas têm prazo. Revisões usam o calendário de estudo.
@@ -51,20 +62,25 @@ export function getActivityReminders(subjects: Subject[], now = new Date()): Act
 // está aberto. A web usa o painel de lembretes dentro do Trilume.
 export function configureNotificationDisplay(): void {
   if (Platform.OS === "web" || notificationDisplayConfigured) return;
-
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
   notificationDisplayConfigured = true;
+
+  void getNotifications().then((Notifications) => {
+    if (!Notifications) return;
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  });
 }
 
 async function ensureNotificationPermission(): Promise<boolean> {
   if (Platform.OS === "web") return false;
+  const Notifications = await getNotifications();
+  if (!Notifications) return false;
 
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("activity-reminders", {
@@ -83,6 +99,8 @@ async function ensureNotificationPermission(): Promise<boolean> {
 
 export async function cancelActivityReminders(notificationIds: string[] = []): Promise<void> {
   if (Platform.OS === "web") return;
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
 
   await Promise.all(notificationIds.map(async (notificationId) => {
     try {
@@ -103,6 +121,9 @@ export async function scheduleActivityReminders(
   await cancelActivityReminders(previousNotificationIds);
 
   if (Platform.OS === "web" || !isReminderEvent(event)) return [];
+
+  const Notifications = await getNotifications();
+  if (!Notifications) return [];
 
   const hasPermission = await ensureNotificationPermission();
   if (!hasPermission) return [];
