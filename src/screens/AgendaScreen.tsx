@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import QuickAddActivityModal from "../components/QuickAddActivityModal";
@@ -83,6 +83,25 @@ export default function AgendaScreen() {
     updateSubject({ ...subject, events: subject.events.map((item) => item.id === event.id ? { ...item, completed: true, notificationIds: [] } : item) });
   }
 
+  function openEvent(subject: Subject) {
+    navigation.navigate("SubjectDetails", { subject, initialSection: "activities" });
+  }
+
+  function deleteEvent(subject: Subject, event: SubjectEvent) {
+    const remove = async () => {
+      await cancelActivityReminders(event.notificationIds);
+      updateSubject({ ...subject, events: subject.events.filter((item) => item.id !== event.id) });
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(`Excluir a atividade "${event.title}"?`)) void remove();
+      return;
+    }
+    Alert.alert("Excluir atividade", `Deseja excluir "${event.title}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: () => void remove() },
+    ]);
+  }
+
   function moveCalendar(direction: number) {
     const next = new Date(selectedDate);
     if (calendarView === "month") next.setMonth(next.getMonth() + direction, 1);
@@ -112,7 +131,7 @@ export default function AgendaScreen() {
         <Text style={styles.sectionTitle}>{formatDate(selectedDate)}</Text>
         {selectedClasses.length > 0 ? <View style={styles.classesCard}><Text style={styles.classesTitle}>Aulas do dia</Text>{selectedClasses.map((subject) => <Pressable key={subject.id} onPress={() => navigation.navigate("SubjectDetails", { subject })} style={styles.classRow}><View style={[styles.classColor, { backgroundColor: subject.color }]} /><View style={{ flex: 1 }}><Text style={styles.className}>{subject.name}</Text><Text style={styles.classMode}>{classModeLabels[subject.classMode ?? "in_person"]}</Text></View><Text style={styles.openText}>Abrir →</Text></Pressable>)}</View> : null}
 
-        {selectedEvents.length === 0 && selectedClasses.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>📅</Text><Text style={styles.emptyTitle}>Dia livre</Text><Text style={styles.emptyText}>Não há aulas ou atividades nesta data.</Text><Pressable onPress={() => setCreateVisible(true)} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Adicionar atividade</Text></Pressable></View> : selectedEvents.map(({ subject, event, daysUntil }) => <View key={`${subject.id}-${event.id}`} style={[styles.eventCard, { borderLeftColor: subject.color }]}><Pressable onPress={() => navigation.navigate("SubjectDetails", { subject })} style={styles.eventMain}><View style={styles.eventHeader}><View style={{ flex: 1 }}><Text style={styles.eventTitle}>{event.title}</Text><Text style={styles.subjectName}>{subject.name} • {getEventLabel(event.type)}</Text></View><Text style={[styles.timeLabel, daysUntil < 0 && styles.overdueLabel]}>{getTimeLabel(daysUntil)}</Text></View></Pressable><Pressable onPress={() => completeEvent(subject, event)} style={styles.completeButton}><Text style={styles.completeText}>✓ Concluir</Text></Pressable></View>)}
+        {selectedEvents.length === 0 && selectedClasses.length === 0 ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>📅</Text><Text style={styles.emptyTitle}>Dia livre</Text><Text style={styles.emptyText}>Não há aulas ou atividades nesta data.</Text><Pressable onPress={() => setCreateVisible(true)} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Adicionar atividade</Text></Pressable></View> : selectedEvents.map(({ subject, event, daysUntil }) => <View key={`${subject.id}-${event.id}`} style={[styles.eventCard, { borderLeftColor: subject.color }]}><Pressable onPress={() => openEvent(subject)} style={styles.eventMain}><View style={styles.eventHeader}><View style={{ flex: 1 }}><Text style={styles.eventTitle}>{event.title}</Text><Text style={styles.subjectName}>{subject.name} • {getEventLabel(event.type)}</Text></View><Text style={[styles.timeLabel, daysUntil < 0 && styles.overdueLabel]}>{getTimeLabel(daysUntil)}</Text></View></Pressable><View style={styles.eventActions}><Pressable onPress={() => openEvent(subject)} style={styles.editButton}><Text style={styles.editText}>Editar</Text></Pressable><Pressable onPress={() => deleteEvent(subject, event)} style={styles.deleteButton}><Text style={styles.deleteText}>Excluir</Text></Pressable><Pressable onPress={() => completeEvent(subject, event)} style={styles.completeButton}><Text style={styles.completeText}>✓ Concluir</Text></Pressable></View></View>)}
       </ScrollView>
       <QuickAddActivityModal visible={createVisible} subjects={subjects} initialDate={selectedKey} onClose={() => setCreateVisible(false)} onSave={handleCreateActivity} />
     </SafeAreaView>
@@ -132,6 +151,6 @@ const styles = {
   viewToggle: { flexDirection: "row", marginTop: 13, marginBottom: 12 }, toggleButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9, marginRight: 7, backgroundColor: "#222237" }, toggleActive: { backgroundColor: "#7C4DFF" }, toggleText: { color: "#9999AE", fontWeight: "700", fontSize: 12 }, toggleTextActive: { color: "white" }, todayButton: { marginLeft: "auto", padding: 8 }, todayText: { color: "#A98BFF", fontWeight: "700" },
   calendarGrid: { flexDirection: "row", flexWrap: "wrap" }, weekLabel: { width: "14.285%", color: "#6F6F83", textAlign: "center", fontWeight: "700", marginBottom: 8 }, dayCell: { width: "14.285%", minHeight: 43, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "transparent" }, daySelected: { backgroundColor: "#6845CE" }, dayToday: { borderColor: "#8F72E8" }, dayText: { color: "#D5D5E1", fontWeight: "700" }, dayMuted: { color: "#555568" }, daySelectedText: { color: "white" }, dots: { flexDirection: "row", height: 5, marginTop: 3 }, dot: { width: 4, height: 4, borderRadius: 2, marginHorizontal: 1 },
   sectionTitle: { color: "white", fontSize: 19, fontWeight: "800", marginTop: 20, marginBottom: 10, textTransform: "capitalize" }, classesCard: { backgroundColor: "#151E1C", borderRadius: 15, padding: 14, marginBottom: 10 }, classesTitle: { color: "#78D7B0", fontWeight: "800", marginBottom: 5 }, classRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10 }, classColor: { width: 9, height: 36, borderRadius: 5, marginRight: 10 }, className: { color: "white", fontWeight: "700" }, classMode: { color: "#8EAAA0", fontSize: 12, marginTop: 3 }, openText: { color: "#71D2AA", fontWeight: "700", fontSize: 12 },
-  eventCard: { backgroundColor: "#161625", borderRadius: 14, borderLeftWidth: 5, marginBottom: 10, overflow: "hidden" }, eventMain: { padding: 15 }, eventHeader: { flexDirection: "row", alignItems: "flex-start" }, eventTitle: { color: "white", fontSize: 16, fontWeight: "700" }, subjectName: { color: "#AAA", marginTop: 5, fontSize: 13 }, timeLabel: { color: "#B9A8FF", fontWeight: "700", fontSize: 12 }, overdueLabel: { color: "#FFB74D" }, completeButton: { backgroundColor: "#123A2C", padding: 11 }, completeText: { color: "#58D39B", fontWeight: "800", textAlign: "center" },
+  eventCard: { backgroundColor: "#161625", borderRadius: 14, borderLeftWidth: 5, marginBottom: 10, overflow: "hidden" }, eventMain: { padding: 15 }, eventHeader: { flexDirection: "row", alignItems: "flex-start" }, eventTitle: { color: "white", fontSize: 16, fontWeight: "700" }, subjectName: { color: "#AAA", marginTop: 5, fontSize: 13 }, timeLabel: { color: "#B9A8FF", fontWeight: "700", fontSize: 12 }, overdueLabel: { color: "#FFB74D" }, eventActions: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#29293C" }, editButton: { flex: 1, padding: 11, backgroundColor: "#242437" }, editText: { color: "#C6B7FF", fontWeight: "800", textAlign: "center" }, deleteButton: { flex: 1, padding: 11, backgroundColor: "#351923" }, deleteText: { color: "#FF8A9B", fontWeight: "800", textAlign: "center" }, completeButton: { flex: 1.3, backgroundColor: "#123A2C", padding: 11 }, completeText: { color: "#58D39B", fontWeight: "800", textAlign: "center" },
   emptyCard: { backgroundColor: "#161625", borderRadius: 16, padding: 24, alignItems: "center" }, emptyIcon: { fontSize: 34 }, emptyTitle: { color: "white", fontWeight: "800", fontSize: 18, marginTop: 9 }, emptyText: { color: "#8888AA", marginTop: 6 }, emptyButton: { backgroundColor: "#7C4DFF", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 10, marginTop: 15 }, emptyButtonText: { color: "white", fontWeight: "700" },
 } as const;

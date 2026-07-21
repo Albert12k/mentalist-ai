@@ -4,11 +4,9 @@ import { useNavigation } from "@react-navigation/native";
 
 import ProgressBar from "../components/ProgressBar";
 import { classModeLabels } from "../constants/subjectSchedule";
-import { useAuth } from "../contexts/AuthContext";
 import { useProfile } from "../contexts/ProfileContext";
 import { useSubjects } from "../contexts/SubjectsContext";
 import { getActivityReminders, getDaysUntil } from "../services/activityReminders";
-import { askAiTutor } from "../services/aiTutor";
 import { getDueFlashcards } from "../services/flashcardReview";
 import { buildStudyActivity } from "../services/studyActivity";
 import { generateStudyPlan, StudyRecommendation } from "../services/studyPlanner";
@@ -29,10 +27,7 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { subjects } = useSubjects();
   const { profile } = useProfile();
-  const { isAdmin } = useAuth();
   const [studyMode, setStudyMode] = useState<StudyMode>("guided");
-  const [aiPlan, setAiPlan] = useState<string>();
-  const [loadingAiPlan, setLoadingAiPlan] = useState(false);
   const plan = useMemo(() => generateStudyPlan(subjects), [subjects]);
   const selectedRecommendations = studyMode === "manual" ? plan : studyMode === "guided" ? plan.slice(0, 2) : plan.slice(0, 5);
   const activity = useMemo(() => buildStudyActivity(subjects, profile.streakFreezeDates), [subjects, profile.streakFreezeDates]);
@@ -46,7 +41,6 @@ export default function HomeScreen() {
   const todayTasks = eventItems.filter((item) => item.days === 0);
   const urgentEvent = eventItems.find((item) => item.days <= 1);
   const reminders = profile.remindersEnabled !== false ? getActivityReminders(subjects) : [];
-  const aiEnabled = process.env.EXPO_PUBLIC_AI_ENABLED === "true" && (profile.plan === "pro" || isAdmin);
   const firstName = profile.name.trim().split(" ")[0] || "Estudante";
 
   function startTraining(items: StudyRecommendation[], mode: StudyMode, openTimer = false) {
@@ -67,14 +61,6 @@ export default function HomeScreen() {
       : plan[0]
         ? { eyebrow: "SUGESTÃO LOCAL PARA AGORA", title: plan[0].subject.name, description: plan[0].reason, button: "Iniciar Pomodoro" }
         : { eyebrow: "COMECE POR AQUI", title: "Crie sua primeira matéria", description: "Cadastre seus dias de aula e organize sua rotina.", button: "Criar matéria" };
-
-  async function explainPlan() {
-    if (!aiEnabled || loadingAiPlan) return;
-    setLoadingAiPlan(true);
-    const result = await askAiTutor("Crie um plano curto para o meu estudo de hoje.", subjects);
-    setAiPlan(result.answer ?? result.error ?? "A IA não está disponível agora.");
-    setLoadingAiPlan(false);
-  }
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
     <Text style={styles.greeting}>Olá, {firstName}</Text><Text style={styles.subtitle}>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</Text>
@@ -99,7 +85,6 @@ export default function HomeScreen() {
     <Text style={styles.sectionTitle}>Seu treino</Text><Text style={styles.sectionHint}>Escolha quanto controle você quer ter.</Text><View style={styles.modeRow}>{(Object.keys(modeInformation) as StudyMode[]).map((mode) => <Pressable key={mode} onPress={() => setStudyMode(mode)} style={[styles.modeButton, studyMode === mode && styles.modeActive]}><Text style={styles.modeTitle}>{modeInformation[mode].title}</Text><Text style={styles.modeDescription}>{modeInformation[mode].description}</Text></Pressable>)}</View>
     <View style={styles.trainingCard}>{selectedRecommendations.length ? <>{selectedRecommendations.map((item, index) => <Pressable key={item.subject.id} onPress={() => startTraining([item], "manual", true)} style={[styles.recommendation, { borderLeftColor: item.subject.color }]}><View style={styles.rowBetween}><Text style={styles.recommendationTitle}>{index + 1}. {item.subject.name}</Text><Text style={styles.priority}>{item.priority}%</Text></View><Text style={styles.recommendationReason}>{item.reason}</Text></Pressable>)}<Pressable onPress={() => startTraining(selectedRecommendations, studyMode)} style={styles.startButton}><Text style={styles.startButtonText}>{studyMode === "manual" ? "Escolher primeira matéria" : "Iniciar treino"}</Text></Pressable></> : <Text style={styles.muted}>Crie uma matéria para montar seu primeiro treino.</Text>}</View>
 
-    <View style={styles.aiCard}><Text style={styles.aiEyebrow}>RECURSO OPCIONAL</Text><Text style={styles.cardTitle}>Plano e tutor com IA</Text><Text style={styles.muted}>{aiEnabled ? aiPlan ?? "Use a IA quando quiser uma explicação adicional do plano local." : "A Home funciona sem IA. Este recurso será liberado quando a integração estiver disponível no seu plano."}</Text>{aiEnabled ? <View style={styles.aiActions}><Pressable onPress={explainPlan} style={styles.aiButton}><Text style={styles.primaryButtonText}>{loadingAiPlan ? "Gerando..." : "Explicar plano"}</Text></Pressable><Pressable onPress={() => navigation.navigate("Tutor")} style={styles.aiLinkButton}><Text style={styles.link}>Abrir tutor</Text></Pressable></View> : <Text style={styles.disabledText}>Indisponível por enquanto</Text>}</View>
   </ScrollView></SafeAreaView>;
 }
 
@@ -116,5 +101,4 @@ const styles = {
   reminderCard: { backgroundColor: "#33231A", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#B35C00", marginBottom: 18 }, reminderTitle: { color: "#FFD180", fontSize: 17, fontWeight: "700" }, reminderItem: { flexDirection: "row", alignItems: "center", backgroundColor: "#221810", padding: 12, borderRadius: 10, marginTop: 10 }, reminderItemTitle: { color: "white", fontWeight: "700" }, reminderItemSubject: { color: "#D9B99C", marginTop: 3, fontSize: 12 }, reminderDays: { color: "#FFD180", fontWeight: "800", marginLeft: 10 },
   modeRow: { flexDirection: "row", marginBottom: 10 }, modeButton: { flex: 1, backgroundColor: "#161625", borderRadius: 12, padding: 11, marginRight: 7, borderWidth: 1, borderColor: "#29283B" }, modeActive: { backgroundColor: "#2A2147", borderColor: "#7C4DFF" }, modeTitle: { color: "white", fontWeight: "800", fontSize: 12 }, modeDescription: { color: "#9995AA", fontSize: 10, marginTop: 3 },
   trainingCard: { backgroundColor: "#161625", borderRadius: 16, padding: 15, marginBottom: 16 }, recommendation: { padding: 11, borderRadius: 10, backgroundColor: "#111120", borderLeftWidth: 4, marginBottom: 9 }, recommendationTitle: { color: "white", fontWeight: "700", flex: 1 }, priority: { color: "#B9A8FF", fontWeight: "800" }, recommendationReason: { color: "#9995AA", marginTop: 5 }, startButton: { backgroundColor: "#7C4DFF", padding: 13, borderRadius: 11, marginTop: 5 }, startButtonText: { color: "white", textAlign: "center", fontWeight: "800" },
-  aiCard: { backgroundColor: "#151520", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#303044" }, aiEyebrow: { color: "#77778D", fontSize: 10, fontWeight: "800", letterSpacing: 1, marginBottom: 6 }, aiActions: { flexDirection: "row", alignItems: "center", marginTop: 13 }, aiButton: { backgroundColor: "#5E35B1", padding: 11, borderRadius: 10, marginRight: 14 }, aiLinkButton: { padding: 10 }, disabledText: { color: "#6F6F80", fontWeight: "700", marginTop: 13 },
 } as const;

@@ -5,8 +5,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useProfile } from "../contexts/ProfileContext";
 import { planDefinitions } from "../services/plans";
 
-const freeFeatures = ["Matérias, agenda e faltas", "Progresso, desafios e recompensas", "Flashcards e quizzes locais", "3 ações de IA para experimentar"];
-const proFeatures = ["Tutor e plano diário com IA", "Leitura de PDFs e fotos", "Transcrição de áudios", "Resumos, quizzes e flashcards com IA", "100 ações de IA por mês", "5 GB de armazenamento"];
+const freeFeatures = ["Matérias, agenda e faltas", "Progresso, desafios e recompensas", "Flashcards e quizzes", "Materiais e Pomodoro", "100 MB de armazenamento"];
+const proFeatures = ["5 GB de armazenamento", "Relatórios avançados", "Mais opções de personalização", "Histórico ampliado", "Suporte prioritário"];
 
 export default function PlansScreen() {
   const navigation = useNavigation<any>();
@@ -18,7 +18,7 @@ export default function PlansScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => navigation.goBack()}><Text style={styles.back}>Voltar</Text></Pressable>
         <Text style={styles.title}>Planos e pagamento</Text>
-        <Text style={styles.subtitle}>Use o Mentalis gratuitamente e evolua para o Pro quando precisar de mais inteligência e armazenamento.</Text>
+        <Text style={styles.subtitle}>Use os recursos essenciais gratuitamente. O plano Pro será aberto quando pagamento e benefícios estiverem prontos.</Text>
 
         {isAdmin ? <View style={styles.adminCard}><Text style={styles.adminTitle}>Conta administradora</Text><Text style={styles.adminText}>Todos os recursos estão liberados e não consomem a cota dos planos.</Text></View> : null}
 

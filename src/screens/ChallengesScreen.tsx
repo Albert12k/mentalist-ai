@@ -22,6 +22,7 @@ export default function ChallengesScreen() {
   const activity = useMemo(() => buildStudyActivity(subjects, profile.streakFreezeDates), [subjects, profile.streakFreezeDates]);
   const nextReward = profileRewards.find((reward) => reward.requiredXP > totalXP);
   const completedChallenges = challenges.filter((challenge) => challenge.current >= challenge.target).length;
+  const claimableChallenges = challenges.filter((challenge) => challenge.current >= challenge.target && !claimedChallenges.has(challenge.id));
 
   const hasSubject = subjects.length > 0;
   const hasMaterial = subjects.some((subject) => subject.contents.length > 0 || subject.materials.length > 0);
@@ -55,6 +56,11 @@ export default function ChallengesScreen() {
     if (!activity.protectableDate || availableFreezes < 1) return;
     updateProfile({ ...profile, streakFreezeDates: [...(profile.streakFreezeDates ?? []), activity.protectableDate] });
     celebrate("🛡️", "Sequência protegida");
+  }
+
+  function claimAll() {
+    claimableChallenges.forEach((challenge) => claimChallenge(challenge.id, challenge.rewardXP));
+    celebrate("🎁", `${claimableChallenges.length} recompensa(s) resgatada(s)`);
   }
 
   return (
@@ -125,6 +131,7 @@ export default function ChallengesScreen() {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>{completedChallenges}/{challenges.length} concluídos</Text>
           <Text style={styles.summaryDescription}>Bônus resgatados: {profile.bonusXP} XP • Total: {totalXP} XP</Text>
+          {claimableChallenges.length > 0 ? <Pressable onPress={claimAll} style={styles.claimAllButton}><Text style={styles.claimAllText}>Resgatar todas ({claimableChallenges.length})</Text></Pressable> : null}
         </View>
 
         {challenges.map((challenge) => {
@@ -218,6 +225,8 @@ const styles = {
   summaryCard: { backgroundColor: "#342769", padding: 16, borderRadius: 16, marginBottom: 16 },
   summaryTitle: { color: "white", fontSize: 18, fontWeight: "700" },
   summaryDescription: { color: "#D6CFFF", marginTop: 7 },
+  claimAllButton: { backgroundColor: "#00A864", padding: 12, borderRadius: 10, marginTop: 13 },
+  claimAllText: { color: "white", textAlign: "center", fontWeight: "800" },
   challengeCard: { backgroundColor: "#161625", padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" },
   challengeTitle: { color: "white", fontSize: 17, fontWeight: "700", flex: 1, marginRight: 10 },
   xpReward: { color: "#FFD600", fontWeight: "700" },

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { getProfile, saveProfile } from "../services/profileStorage";
 import { defaultUserProfile, UserProfile } from "../types/Profile";
@@ -8,6 +8,7 @@ import { getUserAssetUrl } from "../services/cloudStorage";
 
 type ProfileContextType = {
   profile: UserProfile;
+  syncStatus: "loading" | "synced" | "local" | "error";
   updateProfile: (profile: UserProfile) => void;
   claimChallenge: (challengeId: string, xp: number) => void;
 };
@@ -30,30 +31,62 @@ function normalizeProfile(profile: UserProfile): UserProfile {
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { userId, displayName } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile);
+  const [syncStatus, setSyncStatus] = useState<ProfileContextType["syncStatus"]>("loading");
+  const cloudVersion = useRef<string | null | undefined>(undefined);
+  const cloudQueue = useRef<Promise<void>>(Promise.resolve());
+  const currentUserId = useRef<string | null>(userId);
 
   useEffect(() => {
+    let active = true;
+    currentUserId.current = userId;
+    setSyncStatus("loading");
     async function loadProfile() {
-      if (!userId) { setProfile(defaultUserProfile); return; }
+      cloudVersion.current = undefined;
+      if (!userId) { setProfile(defaultUserProfile); setSyncStatus("local"); return; }
       const localProfile = await getProfile(userId, displayName);
-      const cloudProfile = await loadCloudProfile(userId);
+      let cloudProfile: UserProfile | null = null;
+      try {
+        const cloudRecord = await loadCloudProfile(userId);
+        cloudVersion.current = cloudRecord?.updatedAt ?? null;
+        cloudProfile = cloudRecord?.value ?? null;
+        if (active) setSyncStatus(cloudRecord ? "synced" : "local");
+      } catch {
+        if (active) setSyncStatus("error");
+      }
       const profileToUse = normalizeProfile(cloudProfile ?? localProfile);
       const cloudAvatarUrl = await getUserAssetUrl(profileToUse.avatarPath);
       if (cloudAvatarUrl) profileToUse.avatar = cloudAvatarUrl;
+      if (!active) return;
       setProfile(profileToUse);
 
       // Uma conta que já tinha dados locais é enviada ao banco na primeira vez
       // que entra, sem substituir dados que já existam na nuvem.
-      if (!cloudProfile) void saveCloudProfile(userId, profileToUse);
+      if (!cloudProfile && cloudVersion.current === null) {
+        try { cloudVersion.current = await saveCloudProfile(userId, profileToUse); setSyncStatus("synced"); } catch { setSyncStatus("error"); }
+      }
     }
 
     loadProfile();
+    return () => { active = false; };
   }, [userId, displayName]);
+
+  const enqueueCloudSave = useCallback((updatedProfile: UserProfile) => {
+    if (!userId || cloudVersion.current === undefined) return;
+    cloudQueue.current = cloudQueue.current.catch(() => undefined).then(async () => {
+      try {
+        cloudVersion.current = await saveCloudProfile(userId, updatedProfile, cloudVersion.current ?? undefined);
+        if (currentUserId.current === userId) setSyncStatus("synced");
+      } catch {
+        if (currentUserId.current === userId) setSyncStatus("error");
+      }
+    });
+  }, [userId]);
 
   const updateProfile = useCallback((updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
     if (userId) void saveProfile(userId, updatedProfile);
-    if (userId) void saveCloudProfile(userId, updatedProfile);
-  }, [userId]);
+    if (userId && cloudVersion.current !== undefined) enqueueCloudSave(updatedProfile);
+  }, [userId, enqueueCloudSave]);
 
   // Centralizamos o resgate aqui para impedir que uma mesma recompensa seja
   // adicionada duas vezes por telas diferentes.
@@ -68,13 +101,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       };
 
       if (userId) void saveProfile(userId, updatedProfile);
-      if (userId) void saveCloudProfile(userId, updatedProfile);
+      if (userId) enqueueCloudSave(updatedProfile);
       return updatedProfile;
     });
-  }, [userId]);
+  }, [userId, enqueueCloudSave]);
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile, claimChallenge }}>
+    <ProfileContext.Provider value={{ profile, syncStatus, updateProfile, claimChallenge }}>
       {children}
     </ProfileContext.Provider>
   );

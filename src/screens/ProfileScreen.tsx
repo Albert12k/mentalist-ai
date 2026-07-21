@@ -30,8 +30,8 @@ import { deleteCurrentAccount, exportAccountData } from "../services/accountData
 // obrigar que ela percorra todas as matérias para entender a própria evolução.
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { subjects, updateSubjects } = useSubjects();
-  const { profile, updateProfile } = useProfile();
+  const { subjects, updateSubjects, syncStatus: subjectsSyncStatus } = useSubjects();
+  const { profile, updateProfile, syncStatus: profileSyncStatus } = useProfile();
   const { signOutPreview, userId, userEmail, isAdmin, updatePassword } = useAuth();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
@@ -55,6 +55,8 @@ export default function ProfileScreen() {
   const earnedFreezes = totalXP >= 700 ? 2 : totalXP >= 300 ? 1 : 0;
   const availableFreezes = Math.max(earnedFreezes - (profile.streakFreezeDates?.length ?? 0), 0);
   const cloudConnected = Boolean(userId && userId !== "preview-user");
+  const syncStatus = subjectsSyncStatus === "error" || profileSyncStatus === "error" ? "error" : subjectsSyncStatus === "synced" && profileSyncStatus === "synced" ? "synced" : cloudConnected ? "loading" : "local";
+  const syncDescription = syncStatus === "synced" ? "Dados protegidos e atualizados na nuvem" : syncStatus === "error" ? "Sincronização pausada para evitar sobrescrever dados" : syncStatus === "loading" ? "Verificando dados da conta" : "Dados somente neste dispositivo";
 
   async function pickAvatar() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
@@ -113,6 +115,7 @@ export default function ProfileScreen() {
 
   function handleClearLocal() {
     if (!userId) return;
+    if (syncStatus !== "synced") { Alert.alert("Limpeza bloqueada", "Espere a sincronização ficar ativa antes de apagar a cópia deste dispositivo."); return; }
     Alert.alert("Limpar dados deste dispositivo?", "Os dados na nuvem serão mantidos e voltarão quando você entrar novamente.", [{ text: "Cancelar", style: "cancel" }, { text: "Limpar e sair", style: "destructive", onPress: async () => { await clearLocalProfile(userId); await clearLocalSubjects(userId); await signOutPreview(); } }]);
   }
 
@@ -172,14 +175,14 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.card}>
           <SettingRow title="E-mail" description={userEmail ?? "Modo de demonstração"} />
-          <SettingRow title="Sincronização" description={cloudConnected ? "Supabase conectado e dados sincronizados" : "Dados somente neste dispositivo"} status={cloudConnected ? "ATIVA" : "LOCAL"} />
+          <SettingRow title="Sincronização" description={syncDescription} status={syncStatus === "synced" ? "ATIVA" : syncStatus === "error" ? "PAUSADA" : syncStatus === "loading" ? "VERIFICANDO" : "LOCAL"} />
           {cloudConnected ? <SettingRow title="Senha" description="Altere a senha da sua conta" action="Alterar" onPress={() => setPasswordVisible(true)} /> : null}
         </View>
 
         <Text style={styles.sectionTitle}>Dados e privacidade</Text>
         <View style={styles.card}>
           <SettingRow title="Exportar meus dados" description="Baixe perfil, matérias e histórico em JSON" action="Exportar" onPress={handleExport} />
-          <SettingRow title="Limpar dados locais" description="Mantém a cópia sincronizada no Supabase" action="Limpar" danger onPress={handleClearLocal} />
+          <SettingRow title="Limpar dados locais" description={syncStatus === "synced" ? "Mantém a cópia sincronizada no Supabase" : "Disponível somente após sincronizar"} action={syncStatus === "synced" ? "Limpar" : undefined} danger={syncStatus === "synced"} onPress={syncStatus === "synced" ? handleClearLocal : undefined} />
           {cloudConnected ? <SettingRow title="Excluir minha conta" description="Remove permanentemente conta e dados" action="Excluir" danger onPress={() => { setDeleteConfirmation(""); setDeleteVisible(true); }} /> : null}
         </View>
 

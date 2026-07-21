@@ -1,73 +1,28 @@
-# Mentalis — Parte 1: Estrutura Base
+# Mentalis
 
-## O que foi construído
+Aplicativo de organização de estudos feito com Expo, React Native e Supabase.
 
-A fundação do app: tema, navegação e telas em branco.  
-Cada tela mostra um placeholder "Em construção" até ser implementada nas próximas partes.
+## Recursos atuais
 
----
+- Login por e-mail e Google
+- Matérias, conteúdos, materiais e faltas por data
+- Agenda mensal e semanal com lembretes
+- Pomodoro, flashcards e quizzes locais
+- Progresso, desafios, medalhas e recompensas
+- Sincronização protegida por conta
 
-## Estrutura de pastas
-
-```
-mentalis/
-├── App.js                        → Ponto de entrada do app
-├── package.json                  → Dependências do projeto
-│
-└── src/
-    ├── theme/
-    │   └── index.js              → Cores, fontes e espaçamentos globais
-    │
-    ├── navigation/
-    │   └── TabNavigator.js       → Barra de abas inferior (5 abas)
-    │
-    ├── screens/                  → Uma pasta por tela
-    │   ├── HojeScreen.js
-    │   ├── MateriasScreen.js
-    │   ├── PraticarScreen.js
-    │   ├── TutorScreen.js
-    │   └── PerfilScreen.js
-    │
-    └── components/
-        └── PlaceholderScreen.js  → Tela temporária reutilizável
-```
-
----
-
-## Como rodar
+## Executar na web
 
 ```bash
-# 1. Entre na pasta do projeto
-cd mentalis
-
-# 2. Instale as dependências
 npm install
-
-# 3. Inicie o Expo
-npx expo start
+npm run web
 ```
 
-Depois escaneie o QR code com o app **Expo Go** no celular.
+Crie um arquivo `.env` na raiz usando `.env.example` como referência. As chaves privadas nunca devem ser colocadas no aplicativo.
 
----
+## Verificações
 
-## Dependências instaladas
-
-| Pacote | Para que serve |
-|--------|---------------|
-| `expo` | Plataforma que facilita o React Native |
-| `react-navigation/native` | Sistema de navegação entre telas |
-| `react-navigation/bottom-tabs` | Barra de abas inferior |
-| `react-native-screens` | Otimização de telas (obrigatório com React Navigation) |
-| `react-native-safe-area-context` | Respeita o notch e a barra inferior do celular |
-
----
-
-## Próxima parte
-
-**Tela de Hoje** — o coração do app:
-- Saudação com nome e sequência de dias
-- Card "Estudo de hoje" com botão de iniciar
-- Lista de revisões do dia
-- Alerta de ilusão de competência
-- Prazos chegando
+```bash
+npx tsc --noEmit
+npx expo export --platform web
+```

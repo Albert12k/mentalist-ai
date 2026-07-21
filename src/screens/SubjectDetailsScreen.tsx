@@ -39,11 +39,7 @@ import {
   suggestMaterialCategory,
 } from "../services/materials";
 import { deleteUserAsset, uploadUserAsset } from "../services/cloudStorage";
-import { getUserAssetUrl } from "../services/cloudStorage";
 import { generateFlashcardsFromSubject, generateQuizFromSubject } from "../services/assessmentGenerator";
-import { generateAiFlashcards, generateAiQuiz } from "../services/aiTutor";
-import { generateAiSummary } from "../services/aiTutor";
-import { extractMaterialText } from "../services/aiTutor";
 import {
   FlashcardReviewRating,
   formatNextReview,
@@ -104,12 +100,9 @@ export default function SubjectDetailsScreen() {
   const [editingEvent, setEditingEvent] = useState<SubjectEvent | null>(null);
   const [materialDraft, setMaterialDraft] = useState<MaterialDraft | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<SubjectMaterial | null>(null);
-  const [textMaterial, setTextMaterial] = useState<SubjectMaterial | null>(null);
   const [playingQuiz, setPlayingQuiz] = useState<SubjectQuiz | null>(null);
-  const [generatingAssessment, setGeneratingAssessment] = useState<"flashcards" | "quiz" | null>(null);
-  const [generatingSummary, setGeneratingSummary] = useState(false);
   const [absenceVisible, setAbsenceVisible] = useState(false);
-  const [activeSection, setActiveSection] = useState<SubjectSection>("overview");
+  const [activeSection, setActiveSection] = useState<SubjectSection>(route.params.initialSection ?? "overview");
 
   const subject = subjects.find((item) => item.id === routeSubject.id) ?? routeSubject;
   const materials = subject.materials ?? [];
@@ -301,8 +294,6 @@ export default function SubjectDetailsScreen() {
 
   async function handleSaveMaterial(draft: MaterialDraft) {
     let storagePath: string | undefined;
-    let extractedText: string | undefined;
-    let extractionError: string | undefined;
 
     // O arquivo local é mantido como reserva caso a internet falhe durante o envio.
     if (userId) {
@@ -316,9 +307,6 @@ export default function SubjectDetailsScreen() {
           draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"),
         );
         storagePath = uploaded.path;
-        const extraction = await extractMaterialText(uploaded.url, draft.mimeType ?? (draft.type === "pdf" ? "application/pdf" : draft.type === "audio" ? "audio/mp4" : "image/jpeg"));
-        extractedText = extraction.text;
-        if (!extractedText) extractionError = "A IA não retornou texto.";
       } catch {
         Alert.alert("Salvo neste aparelho", "Não foi possível enviar este material agora. Ele continua salvo localmente.");
       }
@@ -331,8 +319,6 @@ export default function SubjectDetailsScreen() {
         {
           ...draft,
           ...(storagePath ? { storagePath } : {}),
-          ...(extractedText ? { extractedText, extractedAt: new Date().toISOString() } : {}),
-          ...(extractionError ? { extractionError } : {}),
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           postedAt: new Date().toISOString(),
         },
@@ -342,36 +328,13 @@ export default function SubjectDetailsScreen() {
     setMaterialDraft(null);
   }
 
-  async function handleExtractMaterial(material: SubjectMaterial) {
-    const freshUrl = await getUserAssetUrl(material.storagePath);
-    const result = await extractMaterialText(freshUrl ?? material.uri, material.mimeType ?? (material.type === "pdf" ? "application/pdf" : material.type === "audio" ? "audio/mp4" : "image/jpeg"));
-    if (result.error) Alert.alert("Leitura com IA", result.error);
-    updateSubject({ ...subject, materials: materials.map((item) => item.id === material.id ? { ...item, ...(result.text ? { extractedText: result.text, extractedAt: new Date().toISOString(), extractionError: undefined } : { extractionError: result.error ?? "A IA não retornou texto." }) } : item) });
-  }
-
   function handleSaveFlashcard(flashcard: SubjectFlashcard) {
     updateSubject({ ...subject, flashcards: [...flashcards, flashcard] });
     setFlashcardCreateVisible(false);
   }
 
-  async function handleGenerateSummary() {
-    if (generatingSummary) return;
-    setGeneratingSummary(true);
-    const result = await generateAiSummary(subject);
-    setGeneratingSummary(false);
-    if (!result) {
-      Alert.alert("Resumo indisponível", "Não foi possível gerar o resumo agora. Tente novamente mais tarde.");
-      return;
-    }
-    updateSubject({ ...subject, aiSummary: result, aiSummaryUpdatedAt: new Date().toISOString() });
-  }
-
-  async function handleGenerateFlashcards() {
-    if (generatingAssessment) return;
-    setGeneratingAssessment("flashcards");
-    const generatedByAi = await generateAiFlashcards(subject);
-    setGeneratingAssessment(null);
-    const generatedFlashcards = generatedByAi.length ? generatedByAi : generateFlashcardsFromSubject(subject, flashcards);
+  function handleGenerateFlashcards() {
+    const generatedFlashcards = generateFlashcardsFromSubject(subject, flashcards);
 
     if (generatedFlashcards.length === 0) {
       Alert.alert(
@@ -399,11 +362,8 @@ export default function SubjectDetailsScreen() {
     setQuizCreateVisible(false);
   }
 
-  async function handleGenerateQuiz() {
-    if (generatingAssessment) return;
-    setGeneratingAssessment("quiz");
-    const quiz = await generateAiQuiz(subject) ?? generateQuizFromSubject(subject);
-    setGeneratingAssessment(null);
+  function handleGenerateQuiz() {
+    const quiz = generateQuizFromSubject(subject);
 
     if (!quiz) {
       Alert.alert(
@@ -644,8 +604,6 @@ export default function SubjectDetailsScreen() {
                     material={material}
                     onDelete={() => handleDeleteMaterial(material)}
                     onPreviewImage={setPreviewMaterial}
-                    onViewExtractedText={setTextMaterial}
-                    onExtractText={(material) => void handleExtractMaterial(material)}
                   />
                 ))}
               </View>
@@ -662,7 +620,7 @@ export default function SubjectDetailsScreen() {
           />
           <Text style={styles.sectionHint}>O Mentalis pode criar perguntas de revisão e programar o próximo encontro com cada carta.</Text>
           <View style={styles.materialActions}>
-            <ActionButton label={generatingAssessment === "flashcards" ? "IA criando..." : "Gerar com IA"} color="#5E35B1" onPress={() => void handleGenerateFlashcards()} />
+            <ActionButton label="Gerar automaticamente" color="#5E35B1" onPress={handleGenerateFlashcards} />
           </View>
 
           {flashcards.length === 0 ? (
@@ -699,7 +657,7 @@ export default function SubjectDetailsScreen() {
           />
           <Text style={styles.sectionHint}>Gere perguntas a partir das descrições dos conteúdos ou crie manualmente.</Text>
           <View style={styles.materialActions}>
-            <ActionButton label={generatingAssessment === "quiz" ? "IA criando..." : "Gerar quiz com IA"} color="#5E35B1" onPress={() => void handleGenerateQuiz()} />
+            <ActionButton label="Gerar automaticamente" color="#5E35B1" onPress={handleGenerateQuiz} />
           </View>
 
           {quizzes.length === 0 ? (
@@ -800,8 +758,6 @@ export default function SubjectDetailsScreen() {
         <View style={styles.card}>
           <SectionHeader title="Anotações" actionLabel="Editar" onAction={() => setNotesVisible(true)} />
           <Text style={styles.detail}>{subject.notes || "Nenhuma anotação ainda."}</Text>
-          <ActionButton label={generatingSummary ? "IA resumindo..." : "Resumir com IA"} color="#5E35B1" onPress={() => void handleGenerateSummary()} />
-          {subject.aiSummary ? <Text style={[styles.detail, { marginTop: 14 }]}>{subject.aiSummary}</Text> : null}
         </View>
         </> : null}
       </ScrollView>
@@ -884,15 +840,6 @@ export default function SubjectDetailsScreen() {
           {previewMaterial ? (
             <Image source={{ uri: previewMaterial.uri }} style={styles.fullImage} resizeMode="contain" />
           ) : null}
-        </SafeAreaView>
-      </Modal>
-      <Modal visible={Boolean(textMaterial)} animationType="slide" onRequestClose={() => setTextMaterial(null)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#080810" }}>
-          <View style={{ padding: 18, flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ color: "white", fontSize: 18, fontWeight: "700", flex: 1 }}>{textMaterial?.title}</Text>
-            <Pressable onPress={() => setTextMaterial(null)}><Text style={{ color: "#C5B5FF", fontWeight: "700" }}>Fechar</Text></Pressable>
-          </View>
-          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}><Text style={{ color: "#E8E8F2", fontSize: 16, lineHeight: 25 }}>{textMaterial?.extractedText}</Text></ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>

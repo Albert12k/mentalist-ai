@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "./AuthContext";
 import { hydrateMaterialForPlatform } from "../services/materials";
@@ -9,6 +9,7 @@ import { getUserAssetUrl } from "../services/cloudStorage";
 
 type SubjectsContextType = {
   subjects: Subject[];
+  syncStatus: "loading" | "synced" | "local" | "error";
   addSubject: (subject: Subject) => void;
   updateSubjects: (subjects: Subject[]) => void;
   removeSubject: (id: string) => void;
@@ -26,14 +27,29 @@ function normalizeSubject(subject: Subject): Subject {
 export function SubjectsProvider({ children }: { children: React.ReactNode }) {
   const { userId } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [syncStatus, setSyncStatus] = useState<SubjectsContextType["syncStatus"]>("loading");
+  const cloudVersion = useRef<string | null | undefined>(undefined);
+  const cloudQueue = useRef<Promise<void>>(Promise.resolve());
+  const currentUserId = useRef<string | null>(userId);
 
   useEffect(() => {
     let active = true;
+    currentUserId.current = userId;
+    setSyncStatus("loading");
     async function load() {
-      if (!userId) { if (active) setSubjects([]); return; }
+      cloudVersion.current = undefined;
+      if (!userId) { if (active) { setSubjects([]); setSyncStatus("local"); } return; }
       const localSubjects = await getSubjects(userId);
-      const cloudSubjects = await loadCloudSubjects(userId);
-      const saved = cloudSubjects ?? localSubjects;
+      let saved = localSubjects;
+      try {
+        const cloudRecord = await loadCloudSubjects(userId);
+        cloudVersion.current = cloudRecord?.updatedAt ?? null;
+        saved = cloudRecord?.value ?? localSubjects;
+        if (active) setSyncStatus(cloudRecord ? "synced" : "local");
+        if (!cloudRecord) { cloudVersion.current = await saveCloudSubjects(userId, saved); if (active) setSyncStatus("synced"); }
+      } catch {
+        if (active) setSyncStatus("error");
+      }
       const hydrated = await Promise.all(saved.map(async (subject) => {
         const normalized = normalizeSubject(subject);
         const cloudImageUrl = await getUserAssetUrl(normalized.imagePath);
@@ -45,7 +61,7 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
         return { ...normalized, ...(cloudImageUrl ? { image: cloudImageUrl } : {}), materials: hydratedMaterials };
       }));
       if (active) setSubjects(hydrated);
-      if (!cloudSubjects) void saveCloudSubjects(userId, saved);
+      await saveSubjects(userId, saved);
     }
     void load();
     return () => { active = false; };
@@ -54,14 +70,22 @@ export function SubjectsProvider({ children }: { children: React.ReactNode }) {
   const persist = useCallback((updated: Subject[]) => {
     if (!userId) return;
     void saveSubjects(userId, updated);
-    void saveCloudSubjects(userId, updated);
+    if (cloudVersion.current === undefined) return;
+    cloudQueue.current = cloudQueue.current.catch(() => undefined).then(async () => {
+      try {
+        cloudVersion.current = await saveCloudSubjects(userId, updated, cloudVersion.current ?? undefined);
+        if (currentUserId.current === userId) setSyncStatus("synced");
+      } catch {
+        if (currentUserId.current === userId) setSyncStatus("error");
+      }
+    });
   }, [userId]);
   const addSubject = useCallback((subject: Subject) => setSubjects((current) => { const updated = [...current, subject]; persist(updated); return updated; }), [persist]);
   const updateSubjects = useCallback((updated: Subject[]) => { setSubjects(updated); persist(updated); }, [persist]);
   const removeSubject = useCallback((id: string) => setSubjects((current) => { const updated = current.filter((subject) => subject.id !== id); persist(updated); return updated; }), [persist]);
   const updateSubject = useCallback((updatedSubject: Subject) => setSubjects((current) => { const updated = current.map((subject) => subject.id === updatedSubject.id ? updatedSubject : subject); persist(updated); return updated; }), [persist]);
 
-  return <SubjectsContext.Provider value={{ subjects, addSubject, updateSubjects, removeSubject, updateSubject }}>{children}</SubjectsContext.Provider>;
+  return <SubjectsContext.Provider value={{ subjects, syncStatus, addSubject, updateSubjects, removeSubject, updateSubject }}>{children}</SubjectsContext.Provider>;
 }
 
 export function useSubjects() {

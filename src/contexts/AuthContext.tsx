@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(email: string, password: string) {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error?.message ?? null;
+    return translateAuthError(error?.message);
   }
 
   async function signUp(email: string, password: string, name: string) {
@@ -102,19 +102,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: { data: { name }, emailRedirectTo: getWebRedirectUrl() },
     });
-    return { error: error?.message ?? null, needsConfirmation: !data.session };
+    return { error: translateAuthError(error?.message), needsConfirmation: !data.session };
   }
 
   async function resetPassword(email: string) {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: getWebRedirectUrl() });
-    return error?.message ?? null;
+    return translateAuthError(error?.message);
   }
 
   async function resendConfirmation(email: string) {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
     const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: getWebRedirectUrl() } });
-    return error?.message ?? null;
+    return translateAuthError(error?.message);
   }
 
   async function signInWithGoogle() {
@@ -133,13 +133,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     if (!error && !data.url) return "O Supabase não retornou a URL de acesso do Google.";
-    return error?.message ?? null;
+    return translateAuthError(error?.message);
   }
 
   async function updatePassword(password: string) {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
     const { error } = await supabase.auth.updateUser({ password });
-    return error?.message ?? null;
+    return translateAuthError(error?.message);
   }
 
   return <AuthContext.Provider value={{ loading, signedIn, userId, displayName, userEmail, isAdmin, continueInPreview, signOutPreview, signIn, signUp, resetPassword, resendConfirmation, signInWithGoogle, updatePassword }}>{children}</AuthContext.Provider>;
@@ -147,6 +147,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 function getWebRedirectUrl(): string | undefined {
   return Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : undefined;
+}
+
+function translateAuthError(message?: string): string | null {
+  if (!message) return null;
+  const normalized = message.toLowerCase();
+  if (normalized.includes("invalid login credentials")) return "E-mail ou senha incorretos.";
+  if (normalized.includes("email not confirmed")) return "Confirme seu e-mail antes de entrar.";
+  if (normalized.includes("user already registered")) return "Já existe uma conta com este e-mail.";
+  if (normalized.includes("password should be")) return "A senha não atende aos requisitos de segurança.";
+  if (normalized.includes("rate limit") || normalized.includes("too many")) return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+  return "Não foi possível concluir o acesso agora. Tente novamente.";
 }
 
 export function useAuth() {
