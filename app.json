@@ -1,38 +1,41 @@
 {
   "expo": {
-    "name": "mentalis-ai",
+    "name": "Trilume",
     "slug": "mentalis-ai",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/trilume-icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/trilume-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080810"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#080810",
+        "foregroundImage": "./assets/trilume-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/trilume-icon.png"
     },
     "plugins": [
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permitir que o Mentalis acesse suas fotos para anexar anotações.",
-          "cameraPermission": "Permitir que o Mentalis use a câmera para registrar anotações."
+          "photosPermission": "Permitir que o Trilume acesse suas fotos para anexar anotações.",
+          "cameraPermission": "Permitir que o Trilume use a câmera para registrar anotações."
         }
       ],
       [
         "expo-audio",
         {
-          "microphonePermission": "Permitir que o Mentalis grave áudios de aula.",
+          "microphonePermission": "Permitir que o Trilume grave áudios de aula.",
           "recordAudioAndroid": true,
           "enableBackgroundRecording": false
         }

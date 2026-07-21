@@ -3,7 +3,7 @@
  * 🧠 TIPOS DE INTELIGÊNCIA DA MATÉRIA
  * ============================================
  *
- * Esses dados ajudam o Mentalis a entender
+ * Esses dados ajudam o Trilume a entender
  * como planejar os estudos futuramente.
  */
 

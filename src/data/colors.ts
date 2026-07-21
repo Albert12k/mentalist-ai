@@ -1,5 +1,5 @@
 /**
- * Paleta expandida do Mentalis
+ * Paleta expandida do Trilume
  * (usada no seletor de cores das matérias)
  */
 

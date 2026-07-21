@@ -1,4 +1,4 @@
-# Mentalis
+# Trilume
 
 Aplicativo de organização de estudos feito com Expo, React Native e Supabase.
 

@@ -1,5 +1,5 @@
 /**
- * Paleta oficial do Mentalis AI
+ * Paleta oficial do Trilume
  *
  * Todas as cores do projeto ficam aqui.
  * Assim fica fácil alterar o tema futuramente.

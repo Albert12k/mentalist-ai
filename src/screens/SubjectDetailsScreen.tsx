@@ -368,7 +368,7 @@ export default function SubjectDetailsScreen() {
     if (!quiz) {
       Alert.alert(
         "Descrição necessária",
-        "Adicione uma descrição aos conteúdos da matéria para o Mentalis criar perguntas confiáveis.",
+        "Adicione uma descrição aos conteúdos da matéria para o Trilume criar perguntas confiáveis.",
       );
       return;
     }
@@ -618,7 +618,7 @@ export default function SubjectDetailsScreen() {
             actionLabel="+ Manual"
             onAction={() => setFlashcardCreateVisible(true)}
           />
-          <Text style={styles.sectionHint}>O Mentalis pode criar perguntas de revisão e programar o próximo encontro com cada carta.</Text>
+          <Text style={styles.sectionHint}>O Trilume pode criar perguntas de revisão e programar o próximo encontro com cada carta.</Text>
           <View style={styles.materialActions}>
             <ActionButton label="Gerar automaticamente" color="#5E35B1" onPress={handleGenerateFlashcards} />
           </View>

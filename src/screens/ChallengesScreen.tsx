@@ -67,7 +67,7 @@ export default function ChallengesScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Desafios e recompensas</Text>
-        <Text style={styles.subtitle}>Aprenda o Mentalis, mantenha o ritmo e desbloqueie conquistas.</Text>
+        <Text style={styles.subtitle}>Aprenda o Trilume, mantenha o ritmo e desbloqueie conquistas.</Text>
 
         <Text style={styles.sectionTitle}>Primeiros passos</Text>
         <View style={styles.tutorialCard}>

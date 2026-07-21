@@ -60,7 +60,7 @@ export default function MaterialImportModal({ visible, draft, onClose, onSave }:
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Classificar material</Text>
           <Text style={styles.subtitle}>
-            O Mentalis sugeriu uma classificação. Altere se quiser antes de guardar.
+            O Trilume sugeriu uma classificação. Altere se quiser antes de guardar.
           </Text>
 
           <View style={styles.typeBadge}>

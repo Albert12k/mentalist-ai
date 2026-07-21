@@ -48,7 +48,7 @@ export function getActivityReminders(subjects: Subject[], now = new Date()): Act
 }
 
 // No Android e iOS, o handler faz a notificação aparecer mesmo quando o app
-// está aberto. A web usa o painel de lembretes dentro do Mentalis.
+// está aberto. A web usa o painel de lembretes dentro do Trilume.
 export function configureNotificationDisplay(): void {
   if (Platform.OS === "web" || notificationDisplayConfigured) return;
 

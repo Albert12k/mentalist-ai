@@ -1,5 +1,5 @@
 /**
- * Sistema de evolução cognitiva (Mentalis Core)
+ * Sistema de evolução do estudante (Trilume Core)
  *
  * Aqui vamos simular crescimento da retenção.
  */

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import { useAuth } from "../contexts/AuthContext";
@@ -93,7 +93,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (view === "confirm") {
-    return <AuthLayout><Text style={styles.brand}>MENTALIS</Text><Text style={styles.title}>Confirme seu e-mail</Text><Text style={styles.subtitle}>Enviamos um link para:</Text><Text style={styles.confirmEmail}>{confirmationEmail}</Text><Feedback text={feedback || "Depois de confirmar, volte para entrar na sua conta."} success /><Pressable disabled={submitting} onPress={handleResend} style={styles.mainButton}><Text style={styles.mainButtonText}>{submitting ? "Enviando..." : "Reenviar e-mail"}</Text></Pressable><LinkButton label="Já confirmei, entrar" onPress={() => { setFeedback(""); setView("login"); }} /></AuthLayout>;
+    return <AuthLayout><Brand /><Text style={styles.title}>Confirme seu e-mail</Text><Text style={styles.subtitle}>Enviamos um link para:</Text><Text style={styles.confirmEmail}>{confirmationEmail}</Text><Feedback text={feedback || "Depois de confirmar, volte para entrar na sua conta."} success /><Pressable disabled={submitting} onPress={handleResend} style={styles.mainButton}><Text style={styles.mainButtonText}>{submitting ? "Enviando..." : "Reenviar e-mail"}</Text></Pressable><LinkButton label="Já confirmei, entrar" onPress={() => { setFeedback(""); setView("login"); }} /></AuthLayout>;
   }
 
   const isSignup = view === "signup";
@@ -103,7 +103,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthLayout>
-      <Text style={styles.brand}>MENTALIS</Text>
+      <Brand />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
       {!isAuthConfigured ? <Feedback text="Modo de teste: conecte o Supabase para ativar o acesso real." /> : null}
@@ -125,7 +125,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Splash() { return <SafeAreaView style={styles.splash}><View style={styles.splashLogo}><Text style={styles.splashM}>M</Text></View><Text style={styles.splashBrand}>Mentalis</Text><Text style={styles.splashText}>Seu estudo, com direção.</Text></SafeAreaView>; }
+function Splash() { return <SafeAreaView style={styles.splash}><Image source={require("../../assets/trilume-icon.png")} style={styles.splashLogo} resizeMode="contain" /><Text style={styles.splashBrand}>Trilume</Text><Text style={styles.splashText}>Seu estudo, com direção.</Text></SafeAreaView>; }
+function Brand() { return <View style={styles.brandLockup}><Image source={require("../../assets/trilume-icon.png")} style={styles.brandLogo} resizeMode="contain" /><Text style={styles.brand}>TRILUME</Text></View>; }
 function AuthLayout({ children }: { children: React.ReactNode }) { return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled"><View style={styles.card}>{children}</View></ScrollView></SafeAreaView>; }
 function Field(props: { value: string; onChangeText: (text: string) => void; placeholder: string; secureTextEntry?: boolean; keyboardType?: "email-address" }) {
   const [visible, setVisible] = useState(false);
@@ -136,13 +137,14 @@ function LinkButton({ label, onPress, subdued = false }: { label: string; onPres
 
 const styles = {
   splash: { flex: 1, backgroundColor: "#080810", alignItems: "center", justifyContent: "center" },
-  splashLogo: { width: 68, height: 68, borderRadius: 22, backgroundColor: "#7C4DFF", justifyContent: "center", alignItems: "center" },
-  splashM: { color: "white", fontSize: 35, fontWeight: "900" },
+  splashLogo: { width: 112, height: 112, borderRadius: 26 },
   splashBrand: { color: "white", fontSize: 30, fontWeight: "800", marginTop: 18 },
   splashText: { color: "#B9A8FF", marginTop: 6 },
   safeArea: { flex: 1, backgroundColor: "#DCE2EC" },
   page: { flexGrow: 1, justifyContent: "center", padding: 22 },
   card: { width: "100%", maxWidth: 410, alignSelf: "center", backgroundColor: "#FFFFFF", borderRadius: 26, padding: 24, shadowColor: "#29354C", shadowOpacity: 0.24, shadowRadius: 18, shadowOffset: { width: 0, height: 9 }, elevation: 8 },
+  brandLockup: { alignItems: "center" },
+  brandLogo: { width: 52, height: 52, borderRadius: 13, marginBottom: 7 },
   brand: { color: "#7C4DFF", letterSpacing: 1.6, fontSize: 11, fontWeight: "900", textAlign: "center" },
   title: { color: "#252236", fontSize: 26, fontWeight: "800", textAlign: "center", marginTop: 12 },
   subtitle: { color: "#777487", textAlign: "center", lineHeight: 19, marginTop: 8, marginBottom: 12 },

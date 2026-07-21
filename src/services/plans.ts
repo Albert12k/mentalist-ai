@@ -2,12 +2,12 @@ import { UserProfile } from "../types/Profile";
 
 export const planDefinitions = {
   free: {
-    name: "Mentalis Free",
+    name: "Trilume Free",
     description: "Organização e acompanhamento para estudar todos os dias.",
     storageMb: 100,
   },
   pro: {
-    name: "Mentalis Pro",
+    name: "Trilume Pro",
     description: "Mais armazenamento, personalização e relatórios avançados.",
     storageMb: 5_000,
   },

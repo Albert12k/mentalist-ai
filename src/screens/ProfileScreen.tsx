@@ -81,7 +81,7 @@ export default function ProfileScreen() {
     const weeklyGoalMinutes = Number(goalInput);
 
     if (!nameInput.trim()) {
-      Alert.alert("Nome obrigatório", "Informe como você quer aparecer no Mentalis.");
+      Alert.alert("Nome obrigatório", "Informe como você quer aparecer no Trilume.");
       return;
     }
     if (!Number.isInteger(weeklyGoalMinutes) || weeklyGoalMinutes < 30 || weeklyGoalMinutes > 2400) {
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.planBadge}>{isAdmin ? "ADMIN" : profile.plan === "pro" ? "PRO" : "FREE"}</Text>
           </View>
-          <Text style={styles.cardDescription}>{isAdmin ? "Acesso completo aos recursos do Mentalis." : currentPlan.description}</Text>
+          <Text style={styles.cardDescription}>{isAdmin ? "Acesso completo aos recursos do Trilume." : currentPlan.description}</Text>
           <Text style={styles.planLimit}>
             {isAdmin
               ? "Recursos do app liberados sem limite de plano"

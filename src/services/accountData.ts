@@ -8,7 +8,7 @@ import { supabase } from "./supabase";
 
 export async function exportAccountData(profile: UserProfile, subjects: Subject[]): Promise<string> {
   const content = JSON.stringify({ exportedAt: new Date().toISOString(), profile, subjects }, null, 2);
-  const fileName = `mentalis-dados-${new Date().toISOString().slice(0, 10)}.json`;
+  const fileName = `trilume-dados-${new Date().toISOString().slice(0, 10)}.json`;
   if (Platform.OS === "web" && typeof document !== "undefined") {
     const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
     const link = document.createElement("a");

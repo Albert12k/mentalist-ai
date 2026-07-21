@@ -1,5 +1,5 @@
 /**
- * Barra de progresso padrão do Mentalis
+ * Barra de progresso padrão do Trilume
  *
  * Usos:
  * - Retenção

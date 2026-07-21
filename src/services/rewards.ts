@@ -9,14 +9,14 @@ export type ProfileReward = {
 // A trilha transforma o XP em conquistas visíveis. Novas recompensas podem ser
 // acrescentadas aqui sem alterar a tela ou os dados já salvos do usuário.
 export const profileRewards: ProfileReward[] = [
-  { id: "beginner", icon: "🌱", title: "Mente Curiosa", description: "Seu primeiro título no Mentalis.", requiredXP: 0 },
+  { id: "beginner", icon: "🌱", title: "Mente Curiosa", description: "Seu primeiro título no Trilume.", requiredXP: 0 },
   { id: "focused", icon: "🎯", title: "Foco em Ação", description: "Para quem começou a construir uma rotina.", requiredXP: 150 },
   { id: "consistent", icon: "🔥", title: "Estudante Persistente", description: "Uma recompensa pela sua consistência.", requiredXP: 400 },
   { id: "master", icon: "🏆", title: "Mestre dos Estudos", description: "Título especial para uma grande jornada.", requiredXP: 800 },
 ];
 
 export const themeRewards = [
-  { id: "purple", name: "Violeta Mentalis", color: "#7C4DFF", requiredXP: 0 },
+  { id: "purple", name: "Violeta Trilume", color: "#7C4DFF", requiredXP: 0 },
   { id: "emerald", name: "Foco Esmeralda", color: "#168A64", requiredXP: 300 },
   { id: "sunset", name: "Pôr do Sol", color: "#B85F32", requiredXP: 600 },
 ] as const;
