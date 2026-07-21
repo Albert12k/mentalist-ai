@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Platform, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 import QuickAddActivityModal from "../components/QuickAddActivityModal";

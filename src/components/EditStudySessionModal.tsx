@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, SafeAreaView, Text, TextInput } from "react-native";
+import { Alert, Modal, Pressable, Text, TextInput } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { StudyHistory } from "../types/Subject";
 

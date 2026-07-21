@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert, Image, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import { useAuth } from "../contexts/AuthContext";

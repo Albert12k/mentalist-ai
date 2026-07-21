@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 
 import { useSubjects } from "../contexts/SubjectsContext";

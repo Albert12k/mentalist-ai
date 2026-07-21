@@ -3,13 +3,13 @@ import {
   Alert,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 
 import CreateSubjectModal from "../components/CreateSubjectModal";

@@ -1,7 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Linking, Platform } from "react-native";
+import { Platform } from "react-native";
 import type { Session } from "@supabase/supabase-js";
+import { makeRedirectUri } from "expo-auth-session";
+import * as QueryParams from "expo-auth-session/build/QueryParams";
+import * as WebBrowser from "expo-web-browser";
 
 import { isAuthConfigured } from "../services/authConfig";
 import { supabase } from "../services/supabase";
@@ -25,6 +28,8 @@ type AuthContextType = {
 
 const SESSION_KEY = "@mentalis:preview-session";
 const AuthContext = createContext<AuthContextType | null>(null);
+
+WebBrowser.maybeCompleteAuthSession();
 
 // Até a conexão com o Supabase ser adicionada, esta sessão só libera o modo
 // de teste local. Ela será substituída pela sessão segura do serviço de login.
@@ -119,21 +124,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signInWithGoogle() {
     if (!supabase) return "A conexão com o Supabase ainda não foi configurada.";
+
+    const redirectTo = Platform.OS === "web" && typeof window !== "undefined"
+      ? window.location.origin
+      : makeRedirectUri({ scheme: "trilume", path: "auth/callback" });
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      // Controlamos a abertura da URL abaixo para evitar que alguns navegadores
-      // bloqueiem o redirecionamento iniciado depois de uma ação assíncrona.
-      options: { redirectTo: getWebRedirectUrl(), skipBrowserRedirect: true },
+      options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (!error && data.url) {
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.location.assign(data.url);
-      } else {
-        await Linking.openURL(data.url);
-      }
-    }
+    if (error) return translateAuthError(error.message);
     if (!error && !data.url) return "O Supabase não retornou a URL de acesso do Google.";
-    return translateAuthError(error?.message);
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.location.assign(data.url);
+      return null;
+    }
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== "success") return "Acesso com Google cancelado.";
+
+    const { params, errorCode } = QueryParams.getQueryParams(result.url);
+    if (errorCode) return `O Google não concluiu o acesso (${errorCode}).`;
+
+    if (typeof params.code === "string") {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(params.code);
+      return translateAuthError(exchangeError?.message);
+    }
+
+    if (typeof params.access_token !== "string" || typeof params.refresh_token !== "string") {
+      return "O Google não devolveu uma sessão válida para o aplicativo.";
+    }
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: params.access_token,
+      refresh_token: params.refresh_token,
+    });
+    return translateAuthError(sessionError?.message);
   }
 
   async function updatePassword(password: string) {

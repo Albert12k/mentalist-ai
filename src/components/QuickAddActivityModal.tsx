@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Subject, SubjectEvent } from "../types/Subject";
 

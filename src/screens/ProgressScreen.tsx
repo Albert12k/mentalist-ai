@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import EditStudySessionModal from "../components/EditStudySessionModal";
 import ProgressBar from "../components/ProgressBar";

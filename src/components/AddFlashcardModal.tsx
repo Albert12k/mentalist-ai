@@ -3,10 +3,10 @@ import {
   Alert,
   Modal,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubjectFlashcard } from "../types/Subject";
 

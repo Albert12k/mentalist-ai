@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, SafeAreaView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Props = {
   visible: boolean;

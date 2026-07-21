@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { Animated, Modal, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Animated, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 
 import ProgressBar from "../components/ProgressBar";

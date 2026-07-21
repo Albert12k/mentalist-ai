@@ -3,12 +3,12 @@ import {
   GestureResponderEvent,
   Modal,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 
 type Props = {

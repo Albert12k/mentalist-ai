@@ -3,10 +3,10 @@ import {
   Alert,
   Modal,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { SubjectQuiz } from "../types/Subject";
 
