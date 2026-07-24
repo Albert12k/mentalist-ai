@@ -7,20 +7,26 @@
     "orientation": "portrait",
     "icon": "./assets/trilume-icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/trilume-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#080810"
-    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.albert12k.trilume"
     },
     "android": {
+      "package": "com.albert12k.trilume",
       "adaptiveIcon": {
         "backgroundColor": "#080810",
-        "foregroundImage": "./assets/trilume-icon.png"
+        "foregroundImage": "./assets/trilume-icon-adaptive.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/trilume-icon.png"
@@ -59,11 +65,31 @@
       "expo-status-bar",
       "expo-asset",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/trilume-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#080810",
+          "dark": {
+            "image": "./assets/trilume-icon.png",
+            "backgroundColor": "#080810"
+          }
+        }
+      ],
+      [
         "expo-web-browser",
         {
           "experimentalLauncherActivity": false
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8b49c6e4-a7f6-48b7-bb8f-0f095722dd07"
+      }
+    },
+    "owner": "albertkkk"
   }
 }

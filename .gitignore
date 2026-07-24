@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Logo drafts kept only on this computer
+assets/mentalis-logo-v*.png
+
 # Native
 .kotlin/
 *.orig.*

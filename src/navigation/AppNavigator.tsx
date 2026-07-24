@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import ChallengesScreen from "../screens/ChallengesScreen";
 import AgendaScreen from "../screens/AgendaScreen";
@@ -31,18 +32,35 @@ export type RootStackParamList = {
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const tabIcons = {
+  Home: { active: "home", inactive: "home-outline" },
+  Matérias: { active: "book", inactive: "book-outline" },
+  Agenda: { active: "calendar", inactive: "calendar-outline" },
+  Desafios: { active: "trophy", inactive: "trophy-outline" },
+  Progresso: { active: "stats-chart", inactive: "stats-chart-outline" },
+  Perfil: { active: "person", inactive: "person-outline" },
+} as const;
+
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarIcon: ({ color, size, focused }) => {
+          const icons = tabIcons[route.name as keyof typeof tabIcons];
+          return <Ionicons name={focused ? icons.active : icons.inactive} color={color} size={size} />;
+        },
         tabBarStyle: {
           backgroundColor: "#0A0A12",
           borderTopColor: "#1A1A2E",
+          paddingTop: 5,
         },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
+        tabBarIconStyle: { marginBottom: 1 },
         tabBarActiveTintColor: "#7C4DFF",
-        tabBarInactiveTintColor: "#666",
-      }}
+        tabBarInactiveTintColor: "#777582",
+      })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Matérias" component={SubjectsScreen} />
